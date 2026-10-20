@@ -1,0 +1,1532 @@
+a = (
+    'Welcome to jobpylot Ai! '
+    "Your career journey starts here. Whether you're searching for your first job, exploring new opportunities, building your skills, or planning a career change, we're here to help you take the next step toward your goals"
+    " \nLet's build your future together"
+)
+print(a)
+desired_job = input('What kind of job are you looking for?')
+print('You are looking for:', desired_job)
+normalized_job = desired_job.lower().strip()
+if 'data analyst' in normalized_job:
+    print(
+        "Let's prepare you for a Data Analyst role!\n"
+        "We'll check which skills you have and which ones you may need to learn."
+    )
+if 'web developer' in normalized_job:
+    print(
+        "Let's prepare you for a Web developer role!\n"
+        "HTML, CSS, and JavaScript are useful skills to learn."
+    )
+if 'python developer' in normalized_job:
+    print("Let's prepare you for a python developer job! \n"
+          "practise python and learn how to build real projects.")
+if 'physiotherapist' in normalized_job:
+    print("Let's prepare you for a physiotherapist role!\n"
+          "Learn about human movement, rehabilitation, and ways to help people to recover from injuries.")
+if 'psychologist' in normalized_job:
+    print("Let's prepare you for a psychologist job!\n"
+          "Build your knowledge of human behavior, mental processes, research, and ethical practices.")
+if 'civil engineer' in normalized_job:
+    print("Let's prepare you for a civil Engineer role!\n"
+          "Strengthen your knowledge of structural design, construction, materials, and project planning.")
+if 'electrical and electronics engineer' in normalized_job:
+    print("Let's prepare you for an Electrical and Electronics Engineer role!\n"
+          "Build your knowledge of circuits, electrical systems, electronics and safety.")
+if 'chemical engineer' in normalized_job:
+    print("Let's prepare you for a Chemical Engineer role!\n"
+          "Learn about chemical processes, process safety, production systems, and quality control.")
+if 'food engineer' in normalized_job:
+    print("Let's prepare you for a food Engineer role!\n"
+          "Develop your knowledge of food processing, preservation, packaging,food safety, and quality control.")
+if 'architect' in normalized_job:
+    print("Let's prepare you for an Architect role!\n"
+          "Build your skills in design, technical drawing, building planning, and sustainable architecture")
+if 'mechanical engineer' in normalized_job:
+    print("Let's prepare you for a Mechanical Engineer role!\n"
+          "Strengthen your knowledge of machines, manufacturing, and maintenance.")
+if 'agricultural and bioresources engineer' in normalized_job:
+    print("Let's prepare you for an Agricultural and Bioresources Engineer role!\n"
+          "Learn about farm machinery, irrigation, processing of agricultural products, and sustainable resource use")
+if 'medical laboratory scientist' in normalized_job:
+    print("Let's prepare you for a Medical Laboratory Scientist role!\n"
+          "Build your knowledge of laboratory testing, specimen handling, diagnostic methods, and laboratory safety")
+if 'nurse' in normalized_job:
+    print("Let's prepare you for a Nursing role!\n"
+          "Strengthen your knowledge of patient care, communication, health assessment, and patient safety")
+if 'teacher/lecturer' in normalized_job:
+    print("Let's prepare you for a Teaching or Lecturing role!\n"
+          "Develop your teaching methods, communication, lesson planning, and subject knowledge")
+if 'head of a company' in normalized_job:
+    print("Let's prepare you for a Company Leadership role!\n"
+          "Develop your leadership, decision-making, communication, financial planning, and team management skills")
+if 'financial accountant' in normalized_job:
+    print("Let's prepare you for a Financial Accountant role!\n"
+          "Strengthen your knowledge of financial reporting, bookkeeping, budgeting, taxation, and accounting standards.")
+if 'economist' in normalized_job:
+    print("Let's prepare you for an Economist role!\n"
+          "Develop your skills in economic analysis, statistics, research, data interpretation, and forecasting.")
+if 'cybersecurity analyst' in normalized_job:
+    print("Let's prepare you for a Cybersecurity Analyst role!\n"
+          "Learn about network security, threat detection, risk assessment, and protecting computer systems.")
+if 'petroleum and gas engineer' in normalized_job:
+    print("Let's prepare you for a Petroleum and Gas Engineer role!\n"
+          "Build your knowledge of drilling, production systems, reservoir fundamentals, and industrial safety.")
+if 'shop attendant' in normalized_job:
+    print("Let's prepare you for a Shop Attendant role!\n"
+          "Develop your customer care, product knowledge, communication, and sales skills.")
+if 'cashier' in normalized_job:
+    print("Let's prepare you for a Cashier role!\n"
+          "Build your skills in handling payments, using a point-of-sale system, counting money, and serving customers accurately.")
+if 'office assistant' in normalized_job:
+    print("Let's prepare you for an Office Assistant role!\n"
+          "Improve your communication, record keeping, document handling, organisation, and basic computer skills")
+if 'business analyst' in normalized_job:
+    print("Let's prepare you for a Business Analyst role!\n"
+          "Develop your skills in problem-solving, business processes, data analysis, requirements gathering, and communication")
+if 'marketing officer' in normalized_job:
+    print("Let's prepare you for a Marketing Officer role!\n"
+          "Build your skills in market research, promotion, customer behavior, communication, and marketing strategy")
+if 'project manager' in normalized_job:
+    print("Let's prepare you for a Project Manager role!\n"
+          "Build your skills in project planning, time management, budgeting, risk management and teamwork.")
+
+user_skills = input('What skills do you have?').lower()
+print('Your skills are:', user_skills)
+
+import re
+from datetime import date
+
+def normalize_skill(skill):
+    """Normalize punctuation and generic wording for exact skill phrase matching."""
+    words = re.sub(r'[^a-z0-9]+', ' ', skill.lower()).split()
+    words = [word for word in words if word not in ('skill', 'skills')]
+    return ' '.join(words)
+
+
+def print_skill_recommendation(job_title, skills):
+    missing_skills = []
+    for actual_skill, display_skill in skills:
+        normalized_skill = normalize_skill(actual_skill)
+        normalized_user_skills = normalize_skill(user_skills)
+        if f' {normalized_skill} ' not in f' {normalized_user_skills} ':
+            missing_skills.append(display_skill)
+    if not missing_skills:
+        return
+    if len(missing_skills) == 1:
+        skill_text = missing_skills[0]
+    elif len(missing_skills) == 2:
+        skill_text = missing_skills[0] + ' and ' + missing_skills[1]
+    else:
+        skill_text = ', '.join(missing_skills[:-1]) + ', and ' + missing_skills[-1]
+    print(f'You should learn {skill_text} to improve your chances of getting a {job_title} job.')
+
+if 'data analyst' in normalized_job:
+    print_skill_recommendation('Data Analyst', [
+        ('excel', 'Excel'),
+        ('sql', 'SQL'),
+        ('python', 'Python'),
+        ('power-bi', 'Power BI'),
+        ('tableau', 'Tableau'),
+        ('statistics and probability', 'Statistics and Probability'),
+        ('data visualization', 'Data Visualization')
+    ])
+if 'web developer' in normalized_job:
+    print_skill_recommendation('Web Development', [
+        ('html', 'HTML'),
+        ('css', 'CSS'),
+        ('javascript', 'JavaScript'),
+        ('react', 'React'),
+        ('node.js', 'Node.js')
+    ])
+if 'python developer' in normalized_job:
+    print_skill_recommendation('Python Developer', [
+        ('python', 'Python'),
+        ('django', 'Django'),
+        ('flask', 'Flask')
+    ])
+if 'cybersecurity analyst' in normalized_job:
+    print_skill_recommendation('Cybersecurity Analyst', [
+        ('network security', 'Network Security'),
+        ('threat detection', 'Threat Detection'),
+        ('risk assessment', 'Risk Assessment'),
+        ('penetration testing', 'Penetration Testing')
+    ])
+if 'financial accountant' in normalized_job:
+    print_skill_recommendation('Financial Accountant', [
+        ('financial reporting', 'Financial Reporting'),
+        ('bookkeeping', 'Bookkeeping'),
+        ('budgeting', 'Budgeting'),
+        ('taxation', 'Taxation'),
+        ('accounting standards', 'Accounting Standards')
+    ])
+if 'business analyst' in normalized_job:
+    print_skill_recommendation('Business Analyst', [
+        ('problem-solving', 'Problem-Solving'),
+        ('business processes', 'Business Processes'),
+        ('data analysis', 'Data Analysis'),
+        ('requirements gathering', 'Requirements Gathering'),
+        ('communication', 'Communication')
+    ])
+if 'marketing officer' in normalized_job:
+    print_skill_recommendation('Marketing Officer', [
+        ('market research', 'Market Research'),
+        ('promotion', 'Promotion'),
+        ('customer behavior', 'Customer Behavior'),
+        ('communication', 'Communication'),
+        ('marketing strategy', 'Marketing Strategy')
+    ])
+if 'head of a company' in normalized_job:
+    print_skill_recommendation('Head of a Company', [
+        ('leadership', 'Leadership'),
+        ('decision-making', 'Decision-Making'),
+        ('communication', 'Communication'),
+        ('financial planning', 'Financial Planning'),
+        ('team management', 'Team Management')
+    ])
+if 'project manager' in normalized_job:
+    print_skill_recommendation('Project Manager', [
+        ('project planning', 'Project Planning'),
+        ('time management', 'Time Management'),
+        ('budgeting', 'Budgeting'),
+        ('risk management', 'Risk Management'),
+        ('teamwork', 'Teamwork')
+    ])
+if 'physiotherapist' in normalized_job:
+    print_skill_recommendation('Physiotherapist', [
+        ('human movement', 'Human Movement'),
+        ('rehabilitation', 'Rehabilitation'),
+        ('injury recovery', 'Injury Recovery')
+    ])
+if 'Civil Engineer' in normalized_job:
+    print_skill_recommendation('Civil Engineer', [
+        ('structural design', 'Structural Design'),
+        ('construction', 'Construction'),
+        ('materials', 'Materials'),
+        ('project planning', 'Project Planning')
+    ])
+if 'Electrical and Electronics Engineer' in normalized_job:
+    print_skill_recommendation('Electrical and Electronics Engineer', [
+        ('circuit analysis', 'Circuit Analysis'),
+        ('electronics', 'Electronics'),
+        ('electrical systems', 'Electrical Systems'),
+        ('troubleshooting', 'Troubleshooting')
+    ])
+if 'Chemical Engineer' in normalized_job:
+    print_skill_recommendation('Chemical Engineer', [
+        ('chemical process', 'Chemical Process'),
+        ('process control', 'Process Control'),
+        ('thermodynamics', 'Thermodynamics'),
+        ('quality control', 'Quality Control')
+    ])
+if 'Food Engineer' in normalized_job:
+    print_skill_recommendation('Food Engineer', [
+        ('food processing', 'Food Processing'),
+        ('food preservation', 'Food Preservation'),
+        ('food safety', 'Food Safety'),
+        ('quality control', 'Quality Control'),
+        ('production systems', 'Production Systems')
+    ])
+if 'Architect' in normalized_job:
+    print_skill_recommendation('Architect', [
+        ('design', 'Design'),
+        ('building codes', 'Building Codes'),
+        ('sustainable design', 'Sustainable Design')
+    ])
+if 'Mechanical Engineer' in normalized_job:
+    print_skill_recommendation('Mechanical Engineer', [
+        ('mechanics', 'Mechanics'),
+        ('computer-aided design', 'Computer-Aided Design'),
+        ('machine design', 'Machine Design'),
+        ('manufacturing', 'Manufacturing')
+    ])
+if 'Agricultural and Bioresources Engineer' in normalized_job:
+    print_skill_recommendation('Agricultural and Bioresources Engineer', [
+        ('farm machinery', 'Farm Machinery'),
+        ('irrigation', 'Irrigation'),
+        ('agricultural processing', 'Agricultural Processing'),
+        ('soil and water management', 'Soil and Water Management'),
+        ('engineering design', 'Engineering Design')
+    ])
+if 'Psychologist' in normalized_job:
+    print_skill_recommendation('Psychologist', [
+        ('human behavior', 'Human Behavior'),
+        ('movement analysis', 'Movement Analysis'),
+        ('psychological research', 'Psychological Research'),
+        ('patient assessment', 'Patient Assessment'),
+        ('statistics', 'Statistics'),
+        ('professional ethics', 'Professional Ethics')
+    ])
+if 'Medical Laboratory Scientist' in normalized_job:
+    print_skill_recommendation('Medical Laboratory Scientist', [
+        ('laboratory testing', 'Laboratory Testing'),
+        ('specimen handling', 'Specimen Handling'),
+        ('diagnostic methods', 'Diagnostic Methods'),
+        ('laboratory safety', 'Laboratory Safety')
+    ])
+if 'Nurse' in normalized_job:
+    print_skill_recommendation('Nurse', [
+        ('patient care', 'Patient Care'),
+        ('health assessment', 'Health Assessment'),
+        ('clinical knowledge', 'Clinical Knowledge'),
+        ('communication', 'Communication'),
+        ('infection prevention', 'Infection Prevention')
+    ])
+if 'teacher/lecturer' in normalized_job:
+    print_skill_recommendation('Teaching or Lecturing', [
+        ('subject knowledge', 'Subject Knowledge'),
+        ('lesson planning', 'Lesson Planning'),
+        ('classroom management', 'Classroom Management'),
+        ('research skills', 'Research Skills')
+    ])
+if 'Shop attendant'  in normalized_job:
+    print_skill_recommendation('Shop Attendant', [
+        ('customer service', 'Customer Service'),
+        ('product knowledge', 'Product Knowledge'),
+        ('communication', 'Communication'),
+        ('stock handling', 'Stock Handling'),
+        ('organisation skills', 'Organisation Skills')
+    ])
+if 'Cashier' in normalized_job:
+    print_skill_recommendation('Cashier', [
+        ('cash handling', 'Cash Handling'),
+        ('point-of-sale systems', 'Point-of-Sale Systems'),
+        ('payment processing', 'Payment Processing'),
+        ('basic arithmetic', 'Basic Arithmetic'),
+        ('customer service skill', 'Customer Service Skill')
+    ])
+if 'Office Assistant' in normalized_job:
+    print_skill_recommendation('Office Assistant', [
+        ('microsoft office', 'Microsoft Office'),
+        ('data entry', 'Data Entry'),
+        ('filing skill', 'Filing Skill'),
+        ('record keeping', 'Record Keeping')
+    ])
+if 'Economist' in normalized_job:
+    print_skill_recommendation('Economist', [
+        ('economic theory', 'Economic Theory'),
+        ('microeconomics', 'Microeconomics'),
+        ('macroeconomics', 'Macroeconomics'),
+        ('econometrics', 'Econometrics'),
+        ('statistical analysis', 'Statistical Analysis'),
+        ('economic modelling', 'Economic Modelling'),
+        ('quantitative analysis', 'Quantitative Analysis'),
+        ('forecasting', 'Forecasting')
+    ])
+if 'Petroleum and Gas Engineer' in normalized_job:
+    print_skill_recommendation('Petroleum and Gas Engineer', [
+        ('reservoir engineering', 'Reservoir Engineering'),
+        ('drilling engineering', 'Drilling Engineering'),
+        ('production engineering', 'Production Engineering'),
+        ('petroleum geology', 'Petroleum Geology'),
+        ('reservoir simulation', 'Reservoir Simulation'),
+        ('well engineering', 'Well Engineering'),
+        ('petroleum production systems', 'Petroleum Production Systems')
+    ])
+
+career_goal = input('What is your career goal?')
+print('Your career goal is:', career_goal)
+
+if career_goal.strip().lower() == 'find a job':
+    print('You are focused on finding a role that matches your skills, interests, and long-term goals.')
+elif career_goal.strip().lower() == 'change careers':
+    print('You are planning a career change and want to move toward a path that better fits your strengths and interests.')
+elif career_goal.strip().lower() == 'improve my skills':
+    print('You want to strengthen your abilities, learn new knowledge, and become more competitive in your field.')
+elif career_goal.strip().lower() == 'advance in my career':
+    print('You are aiming to grow professionally, take on new responsibilities, and reach the next level in your career.')
+elif career_goal.strip().lower() == 'start or grow a business':
+    print('You are focused on building or expanding a business that creates value, growth, and long-term opportunities.')
+elif career_goal.strip().lower() == 'find an internship or entry-level opportunity':
+    print('You want to gain practical experience, build confidence, and begin your career with a strong foundation.')
+elif career_goal.strip().lower() == 'explore career options':
+    print('You are exploring different career paths to discover the best fit for your interests and future goals.')
+elif career_goal.strip().lower() == 'other':
+    career_goal = input('Please describe your personal career goal: ')
+    print('Your career goal is:', career_goal)
+    print('Thank you for sharing your personal career goal. We will use it to support your next steps.')
+else:
+    print('You have a clear career direction, and we will help you work toward it with a focused plan.')
+
+if normalized_job == 'data analyst':
+    print('Your career goal is to become a skilled Data Analyst who can interpret data, solve problems, and support better business decisions.')
+if normalized_job == 'web developer':
+    print('Your career goal is to become a skilled Web Developer who can create and maintain websites, build user-friendly interfaces, and implement web technologies.')
+if normalized_job == 'python developer':
+    print('Your career goal is to become a skilled Python Developer who can write efficient code, develop applications, and contribute to software projects.')
+if normalized_job == 'physiotherapist':
+    print('Your career goal is to become a skilled Physiotherapist who can help patients recover from injuries, improve mobility, and enhance their quality of life.')
+if normalized_job == 'psychologist':
+    print('Your career goal is to become a skilled Psychologist who can understand human behavior, provide therapy, and support mental health.')
+if normalized_job == 'civil engineer':
+    print('Your career goal is to become a skilled Civil Engineer who can design and oversee construction projects, ensuring safety and sustainability.')
+if normalized_job == 'electrical and electronics engineer':
+    print('Your career goal is to become a skilled Electrical and Electronics Engineer who can design, develop, and maintain electrical systems and electronic devices.')
+if normalized_job == 'chemical engineer':
+    print('Your career goal is to become a skilled Chemical Engineer who can design and optimize chemical processes, ensuring efficiency and safety.')
+if normalized_job == 'food engineer':
+    print('Your career goal is to become a skilled Food Engineer who can develop and improve food products, ensuring quality and safety.')
+if normalized_job == 'architect':
+    print('Your career goal is to become a skilled Architect who can design functional and aesthetically pleasing buildings, considering sustainability and user needs.')
+if normalized_job == 'mechanical engineer':
+    print('Your career goal is to become a skilled Mechanical Engineer who can design, analyze, and maintain mechanical systems and machinery.')
+if normalized_job == 'agricultural and bioresources engineer':
+    print('Your career goal is to become a skilled Agricultural and Bioresources Engineer who can develop sustainable agricultural practices and improve resource management.')
+if normalized_job == 'medical laboratory scientist':
+    print('Your career goal is to become a skilled Medical Laboratory Scientist who can perform diagnostic tests, analyze samples, and contribute to patient care.')
+if normalized_job == 'nurse':
+    print('Your career goal is to become a skilled Nurse who can provide patient care, support health and wellness, and promote recovery.')
+if normalized_job == 'teacher/lecturer':
+    print('Your career goal is to become a skilled Teacher or Lecturer who can educate and inspire students, fostering learning and critical thinking.')
+if normalized_job == 'head of a company':
+    print('Your career goal is to become a skilled Head of a Company who can lead teams, make strategic decisions, and drive business growth.')
+if normalized_job == 'financial accountant':
+    print('Your career goal is to become a skilled Financial Accountant who can manage financial records, ensure compliance, and support business decision-making.')
+if normalized_job == 'economist':
+    print('Your career goal is to become a skilled Economist who can analyze economic trends, provide insights, and contribute to policy-making.')
+if normalized_job == 'cybersecurity analyst':
+    print('Your career goal is to become a skilled Cybersecurity Analyst who can protect systems, detect threats, and ensure data security.')
+if normalized_job == 'petroleum and gas engineer':
+    print('Your career goal is to become a skilled Petroleum and Gas Engineer who can optimize extraction processes, ensure safety, and contribute to energy production.')
+if normalized_job == 'shop attendant':
+    print('Your career goal is to become a skilled Shop Attendant who can provide excellent customer service, manage inventory, and support sales.')
+if normalized_job == 'cashier':
+    print('Your career goal is to become a skilled Cashier who can handle transactions accurately, provide customer service, and support store operations.')
+if normalized_job == 'office assistant':
+    print('Your career goal is to become a skilled Office Assistant who can manage administrative tasks, support office operations, and ensure smooth workflow.')
+if normalized_job == 'business analyst':
+    print('Your career goal is to become a skilled Business Analyst who can analyze business processes, identify improvements, and support decision-making.')
+if normalized_job == 'marketing officer':
+    print('Your career goal is to become a skilled Marketing Officer who can develop marketing strategies, analyze market trends, and promote products or services.')
+if normalized_job == 'project manager':
+    print('Your career goal is to become a skilled Project Manager who can plan, execute, and oversee projects, ensuring they are completed on time and within budget.')
+print('What is your work experience?')
+print('1. No work experience yet')
+print('2. First-time job seeker')
+print('3. Student seeking experience')
+print('4. Recent graduate')
+print('5. Internship experience')
+print('6. Entry-level work experience')
+print('7. 1 year of experience')
+print('8. 2 years of experience')
+print('9. 3 years of experience')
+print('10. 4 years of experience')
+print('11. 5 years of experience')
+print('12. 6-10 years of experience')
+print('13. 11-15 years of experience')
+print('14. 15+ years of experience')
+print('15. Freelance or contract work')
+print('16. Self-employed')
+print('17. Volunteer experience')
+print('18. Part-time work')
+print('19. Remote work experience')
+print('20. Other')
+user_experience = input('Enter the number or your choice: ')
+user_experience = user_experience.strip()
+user_experience_lower = user_experience.lower()
+
+if user_experience_lower in ['1', 'no work experience yet']:
+    user_experience = 'No work experience yet'
+elif user_experience_lower in ['2', 'first-time job seeker']:
+    user_experience = 'First-time job seeker'
+elif user_experience_lower in ['3', 'student seeking experience']:
+    user_experience = 'Student seeking experience'
+elif user_experience_lower in ['4', 'recent graduate']:
+    user_experience = 'Recent graduate'
+elif user_experience_lower in ['5', 'internship experience']:
+    user_experience = 'Internship experience'
+elif user_experience_lower in ['6', 'entry-level work experience']:
+    user_experience = 'Entry-level work experience'
+elif user_experience_lower in ['7', '1 year of experience']:
+    user_experience = '1 year of experience'
+elif user_experience_lower in ['8', '2 years of experience']:
+    user_experience = '2 years of experience'
+elif user_experience_lower in ['9', '3 years of experience']:
+    user_experience = '3 years of experience'
+elif user_experience_lower in ['10', '4 years of experience']:
+    user_experience = '4 years of experience'
+elif user_experience_lower in ['11', '5 years of experience']:
+    user_experience = '5 years of experience'
+elif user_experience_lower in ['12', '6-10 years of experience']:
+    user_experience = '6-10 years of experience'
+elif user_experience_lower in ['13', '11-15 years of experience']:
+    user_experience = '11-15 years of experience'
+elif user_experience_lower in ['14', '15+ years of experience']:
+    user_experience = '15+ years of experience'
+elif user_experience_lower in ['15', 'freelance or contract work']:
+    user_experience = 'Freelance or contract work'
+elif user_experience_lower in ['16', 'self-employed']:
+    user_experience = 'Self-employed'
+elif user_experience_lower in ['17', 'volunteer experience']:
+    user_experience = 'Volunteer experience'
+elif user_experience_lower in ['18', 'part-time work']:
+    user_experience = 'Part-time work'
+elif user_experience_lower in ['19', 'remote work experience']:
+    user_experience = 'Remote work experience'
+elif user_experience_lower in ['20', 'other']:
+    user_experience = input('Please describe your work experience: ')
+else:
+    user_experience = user_experience
+
+print('Your work experience is:', user_experience)
+print('\n---- EDUCATIONAL BACKGROUND----')
+print('choose the option that best describes you.')
+print('1. No formal education.')
+print('2. High school diploma or equivalent.')
+print('3. Vocational or technical training.')
+print('4. Currently pursuing a diploma.')
+print("5. Diploma holder.")
+print('6. Currently pursuing an undergraduate degree.')
+print("7. Bachelor's degree holder.")
+print('8. Currently pursuing a postgraduate degree.')
+print("9. Master's degree holder")
+print("10. Doctoral degree holder(phD).")
+print('11. Professional certificaion.')
+print('12. Online courses or self-taught.')
+print('13. Apprenticeship or practical training.')
+print('14. Multiple qualifications.')
+print('15. Other')
+user_education = input('Enter your choice (1-15): ').strip()
+if user_education == '1':
+    print("Let's explore opportunities that match your interests, abilities, and career goals.")
+elif user_education == '2':
+    print("Let's identify opportunities that match your high school education and skills.")
+elif user_education == '3':
+    print("Let's highlight your technical training and practical abilitie.")
+elif user_education == '4':
+    print("Let's explore opportunities that support your studies and career development")
+elif user_education == '5' :
+    print("Let's find opportunities that match your diploma and skills.")
+elif user_education == '6':
+    print("Let's explore internships and suitable opportunities while you study.")
+elif user_education == '7':
+    print("Let's connect your bachelor's degree and skills to suitable career opportunities.")
+elif user_education == '8':
+    print("Let's explore opportunities that complement your postgraduate studies.")
+elif user_education == '9':
+    print("Let's highlight your master's degree and specialized knowledge.")
+elif user_education == '10':
+    print("Let's explore opportunities that match your doctoral qualifications and expertise.")
+elif user_education == '11':
+    print("Let's showcase your professional certifications and specialized skills.")
+elif user_education == '12':
+    print("Let's highlight your self-directed learning, projects, and practical skills.")
+elif user_education == '13':
+    print("Let's showcase your hands-on training and practical experience.")
+elif user_education == '14':
+    print("Let's present your qualifications and identify suitable opportunities.")
+elif user_education == '15':
+    user_education = input('Please describe your educational background: ').strip()
+    print('Your educational background is:', user_education)
+else:
+    print('Invalid choice. Please enter a number from 1 to 15.')
+
+education_levels = {
+    '1': 'No formal education',
+    '2': 'High school diploma or equivalent',
+    '3': 'Vocational or technical training',
+    '4': 'Currently pursuing a diploma',
+    '5': 'Diploma holder',
+    '6': 'Currently pursuing an undergraduate degree',
+    '7': "Bachelor's degree holder",
+    '8': 'Currently pursuing a postgraduate degree',
+    '9': "Master's degree holder",
+    '10': 'Doctoral degree holder (PhD)',
+    '11': 'Professional certification',
+    '12': 'Online courses or self-taught',
+    '13': 'Apprenticeship or practical training',
+    '14': 'Multiple qualifications',
+}
+user_education = education_levels.get(user_education, user_education)
+
+print('\n---- WORK LOCATION PREFERENCE ----')
+print('Choose your preferred work location.')
+print('1. Remote work (work from home or anywhere)')
+print('2. Abuja, Nigeria.')
+print('3. Lagos, Nigeria.')
+print('4. Port Harcourt, Nigeria.')
+print('5. Kano, Nigeria.')
+print('6. Ibadan, Nigeria.')
+print('7. Enugu, Nigeria.')
+print('8. Kaduna, Nigeria.')
+print('9. Benin City, Nigeria.')
+print('10. Jos, Nigeria.')
+print('11. Ilorin, Nigeria.')
+print('12. Maiduguri, Nigeria.')
+print('13. Sokoto, Nigeria.')
+print('14. Yenagoa, Nigeria.')
+print('15. Osogbo, Nigeria.')
+print('16. Abeokuta, Nigeria.')
+print('17. Ijebu-Ode, Nigeria.')
+print('18. Offa, Nigeria.')
+print('19. Ado-Ekiti, Nigeria.')
+print('20. Gombe, Nigeria.')
+print('21. Minna, Nigeria.')
+print('22. Dutse, Nigeria.')
+print('23. Yola, Nigeria.')
+print('24. Makurdi, Nigeria.')
+print('25. Uyo, Nigeria.')
+print('26. Calabar, Nigeria.')
+print('27. Warri, Nigeria.')
+print('28. Umuahia, Nigeria.')
+print('29. Awka, Nigeria.')
+print('30. Onitsha, Nigeria.')
+print('31. Other location (please specify)')
+print('Please enter the number corresponding to your preferred work location (1-31):')
+print('If you choose "Other location," please specify your preferred work location.')
+print('If you choose "Remote work," please specify if you prefer fully remote or hybrid work arrangements.')
+print('If you choose a specific city, please specify if you are open to relocation or prefer to work in that city only.')
+print('Your work location preference will help us tailor job opportunities that align with your preferences and career goals.')
+print('Please note that some job opportunities may require flexibility in work location, and we will provide guidance on how to navigate such situations.')
+
+location_options = {
+    '1': 'Remote work',
+    '2': 'Abuja, Nigeria',
+    '3': 'Lagos, Nigeria',
+    '4': 'Port Harcourt, Nigeria',
+    '5': 'Kano, Nigeria',
+    '6': 'Ibadan, Nigeria',
+    '7': 'Enugu, Nigeria',
+    '8': 'Kaduna, Nigeria',
+    '9': 'Benin City, Nigeria',
+    '10': 'Jos, Nigeria',
+    '11': 'Ilorin, Nigeria',
+    '12': 'Maiduguri, Nigeria',
+    '13': 'Sokoto, Nigeria',
+    '14': 'Yenagoa, Nigeria',
+    '15': 'Osogbo, Nigeria',
+    '16': 'Abeokuta, Nigeria',
+    '17': 'Ijebu-Ode, Nigeria',
+    '18': 'Offa, Nigeria',
+    '19': 'Ado-Ekiti, Nigeria',
+    '20': 'Gombe, Nigeria',
+    '21': 'Minna, Nigeria',
+    '22': 'Dutse, Nigeria',
+    '23': 'Yola, Nigeria',
+    '24': 'Makurdi, Nigeria',
+    '25': 'Uyo, Nigeria',
+    '26': 'Calabar, Nigeria',
+    '27': 'Warri, Nigeria',
+    '28': 'Umuahia, Nigeria',
+    '29': 'Awka, Nigeria',
+    '30': 'Onitsha, Nigeria',
+}
+
+location_choice = input('Where would you prefer to work? ').strip()
+if location_choice == '31':
+    user_location = input('Please enter your preferred location: ').strip()
+else:
+    user_location = location_options.get(location_choice, location_choice)
+
+print('Your preferred work location is:', user_location)
+
+print('\n---- USER PROFILE SUMMARY---')
+print('Desired job', normalized_job)
+print('Skills', user_skills)
+print('Career goal', career_goal)
+print('Work experience', user_experience)
+print('Educational background', user_education)
+print('preferred work location', user_location)
+
+print('\n----- UNDERSTANDING  YOUR CAREER PROFILE')
+career_requirements = {
+    'Data Analyst': [
+        'Excel',
+        'SQL',
+        'Python',
+        'Power BI',
+        'Tableau',
+        'Statistics and Probability',
+        'Data Visualization'
+    ],
+    'Web Developer': [
+        'HTML',
+        'CSS',
+        'JavaScript',
+        'React',
+        'Node.js'
+    ],
+    'Python Developer': [
+        'Python',
+        'Django',
+        'Flask'
+    ],
+    'Cybersecurity Analyst': [
+        'Network Security',
+        'Threat Detection',
+        'Risk Assessment',
+        'Penetration Testing'
+    ],
+    'Financial Accountant': [
+        'Financial Reporting',
+        'Bookkeeping',
+        'Budgeting',
+        'Taxation',
+        'Accounting Standards'
+    ],
+    'Business Analyst': [
+        'Problem-Solving',
+        'Business Processes',
+        'Data Analysis',
+        'Requirements Gathering',
+        'Communication'
+    ],
+    'Marketing Officer': [
+        'Market Research',
+        'Promotion',
+        'Customer Behavior',
+        'Communication',
+        'Marketing Strategy'
+    ],
+    'Head of a Company': [
+        'Leadership',
+        'Decision-Making',
+        'Communication',
+        'Financial Planning',
+        'Team Management'
+    ],
+    'Project Manager': [
+        'Project Planning',
+        'Time Management',
+        'Budgeting',
+        'Risk Management',
+        'Teamwork'
+    ],
+    'Physiotherapist': [
+        'Human Movement',
+        'Rehabilitation',
+        'Injury Recovery'
+    ],
+    'Civil Engineer': [
+        'Structural Design',
+        'Construction',
+        'Materials',
+        'Project Planning'
+    ],
+    'Electrical and Electronics Engineer': [
+        'Circuit Analysis',
+        'Electronics',
+        'Electrical Systems',
+        'Troubleshooting'
+    ],
+    'Chemical Engineer': [
+        'Chemical Process',
+        'Process Control',
+        'Thermodynamics',
+        'Quality Control'
+    ],
+    'Food Engineer': [
+        'Food Processing',
+        'Food Preservation',
+        'Food Safety',
+        'Quality Control',
+        'Production Systems'
+    ],
+    'Architect': [
+        'Design',
+        'Building Codes',
+        'Sustainable Design'
+    ],
+    'Mechanical Engineer': [
+        'Mechanics',
+        'Computer-Aided Design',
+        'Machine Design',
+        'Manufacturing'
+    ],
+    'Agricultural and Bioresources Engineer': [
+        'Farm Machinery',
+        'Irrigation',
+        'Agricultural Processing',
+        'Soil and Water Management',
+        'Engineering Design'
+    ],
+    'Psychologist': [
+        'Human Behavior',
+        'Movement Analysis',
+        'Psychological Research',
+        'Patient Assessment',
+        'Statistics',
+        'Professional Ethics'
+    ],
+    'Medical Laboratory Scientist': [
+        'Laboratory Testing',
+        'Specimen Handling',
+        'Diagnostic Methods',
+        'Laboratory Safety'
+    ],
+    'Nurse': [
+        'Patient Care',
+        'Health Assessment',
+        'Clinical Knowledge',
+        'Communication',
+        'Infection Prevention'
+    ],
+    'Teacher/Lecturer': [
+        'Subject Knowledge',
+        'Lesson Planning',
+        'Classroom Management',
+        'Research Skills'
+    ],
+    'Shop Attendant': [
+        'Customer Service',
+        'Product Knowledge',
+        'Communication',
+        'Stock Handling',
+        'Organisation Skills'
+    ],
+    'Cashier': [
+        'Cash Handling',
+        'Point-of-Sale Systems',
+        'Payment Processing',
+        'Basic Arithmetic',
+        'Customer Service Skill'
+    ],
+    'Office Assistant': [
+        'Microsoft Office',
+        'Data Entry',
+        'Filing Skill',
+        'Record Keeping'
+    ],
+    'Economist': [
+        'Economic Theory',
+        'Microeconomics',
+        'Macroeconomics',
+        'Econometrics',
+        'Statistical Analysis',
+        'Economic Modelling',
+        'Quantitative Analysis',
+        'Forecasting'
+    ],
+    'Petroleum and Gas Engineer': [
+        'Reservoir Engineering',
+        'Drilling Engineering',
+        'Production Engineering',
+        'Petroleum Geology',
+        'Reservoir Simulation',
+        'Well Engineering',
+        'Petroleum Production Systems'
+    ]
+}
+
+normalized_job = ' '.join(normalized_job.lower().split())
+normalized_user_skills = normalize_skill(user_skills)
+
+career_word_groups = (
+    {'accountant', 'accountants', 'accounting'},
+    {'analyst', 'analysts', 'analysis', 'analytic', 'analytics'},
+    {'architect', 'architects', 'architecture'},
+    {'designer', 'designers', 'design', 'designing'},
+    {'developer', 'developers', 'development'},
+    {'economist', 'economists', 'economic', 'economics'},
+    {'engineer', 'engineers', 'engineering'},
+    {'lecturer', 'lecturers', 'teacher', 'teachers', 'teaching', 'educator', 'educators'},
+    {'manager', 'managers', 'management'},
+    {'marketer', 'marketers', 'marketing'},
+    {'nurse', 'nurses', 'nursing'},
+    {'programmer', 'programmers', 'programming'},
+    {'psychologist', 'psychologists', 'psychology'},
+    {'researcher', 'researchers', 'research'},
+    {'scientist', 'scientists', 'science'},
+)
+career_word_aliases = {
+    word: min(word_group)
+    for word_group in career_word_groups
+    for word in word_group
+}
+
+
+def normalize_career_title(title):
+    title_words = re.findall(r'[a-z0-9]+', title.casefold())
+    return ' '.join(career_word_aliases.get(word, word) for word in title_words)
+
+
+def career_title_matches(job_title, career_title):
+    job_variants = re.split(r'\s*(?:/|\bor\b)\s*', job_title, flags=re.IGNORECASE)
+    career_variants = re.split(r'\s*(?:/|\bor\b)\s*', career_title, flags=re.IGNORECASE)
+    return any(
+        normalize_career_title(job_variant) == normalize_career_title(career_variant)
+        for job_variant in job_variants
+        for career_variant in career_variants
+    )
+
+
+career_found = False
+for career, required_skills in career_requirements.items():
+    if career_title_matches(normalized_job, career):
+        career_found = True
+        skills_user_has = []
+        skills_to_improve = []
+
+        for required_skill in required_skills:
+            normalized_skill = normalize_skill(required_skill)
+            if f' {normalized_skill} ' in f' {normalized_user_skills} ':
+                skills_user_has.append(required_skill)
+            else:
+                skills_to_improve.append(required_skill)
+
+        print('You want to work as a', career + '.')
+        if skills_user_has:
+            print('Relevant skills you already have:', ', '.join(skills_user_has))
+        else:
+            print('You have not listed any of the skills required for this career yet.')
+
+        if skills_to_improve:
+            print('Skills you may want to improve:', ', '.join(skills_to_improve))
+        else:
+            print('You have listed all the skills in this career profile.')
+
+if not career_found:
+    print(
+        "Requirements for this career haven't been added yet. "
+        'Please check back later.'
+    )
+print('\n---- JOB SEARCH-----')
+print("Let's explore job opportunities that align with your profile.")
+print(f'Desired job: {normalized_job}')
+print(f'Preferred work location: {user_location}')
+print(f'Work experience: {user_experience}')
+print(f'Educational background: {user_education}')
+print(f'Career goal: {career_goal}')
+print(f'Skills you have: {user_skills}')
+print('Job search is ready to begin.')
+import requests
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+
+def ensure_backend_is_running():
+    health_url = 'http://127.0.0.1:8000/health'
+    try:
+        response = requests.get(health_url, timeout=2)
+    except requests.ConnectionError:
+        project_root = Path(__file__).resolve().parent
+        print('JobPylot backend is stopped. Starting it now...')
+        try:
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    '-m',
+                    'uvicorn',
+                    'backend.main:app',
+                    '--host',
+                    '127.0.0.1',
+                    '--port',
+                    '8000',
+                ],
+                cwd=project_root,
+            )
+        except OSError as error:
+            raise RuntimeError(
+                f'The JobPylot backend could not be started: {error}'
+            ) from error
+
+        startup_deadline = time.monotonic() + 15
+        while time.monotonic() < startup_deadline:
+            if process.poll() is not None:
+                raise RuntimeError(
+                    'The JobPylot backend stopped while starting. '
+                    'Check that FastAPI and Uvicorn are installed in this Python environment.'
+                )
+            try:
+                response = requests.get(
+                    health_url,
+                    timeout=min(2, startup_deadline - time.monotonic()),
+                )
+                break
+            except (requests.ConnectionError, requests.Timeout):
+                time.sleep(0.25)
+        else:
+            raise RuntimeError(
+                'The JobPylot backend did not become ready within 15 seconds.'
+            )
+
+    response.raise_for_status()
+    health_data = response.json()
+    if not isinstance(health_data, dict) or health_data.get('status') != 'ok':
+        raise RuntimeError('The local service on port 8000 is not the JobPylot backend.')
+
+try:
+    ensure_backend_is_running()
+    response = requests.get(
+        'http://127.0.0.1:8000/jobs',
+        params={'title': normalized_job},
+        timeout=180,
+    )
+    response.raise_for_status()
+    data = response.json()
+    if not isinstance(data, dict) or not isinstance(data.get('jobs'), list):
+        raise ValueError('The JobPylot backend returned an unexpected response.')
+except (requests.RequestException, RuntimeError, ValueError) as error:
+    print(
+        '\nSorry, the job search could not be completed: '
+        f'{error}\nCheck your internet connection and make sure the project '
+        'dependencies are installed if the backend failed to start.'
+    )
+else:
+    matching_jobs = data['jobs']
+    print('\n-----AVAILABLE JOBS-----')
+    if not matching_jobs:
+        print(
+            f'No job listings with a title matching "{normalized_job}" '
+            'and Nigeria listed as an eligible location were found after '
+            f'checking {data.get("jobs_checked", 0)} listings across '
+            f'{data.get("batches_checked", 0)} batches. '
+            'Try a related title or search again later.'
+        )
+
+    for job in matching_jobs:
+        if not isinstance(job, dict):
+            continue
+        print('\nJob title:', job.get('title') or 'Not provided')
+        print('Company:', job.get('companyName') or 'Not provided')
+
+        location_restrictions = job.get('locationRestrictions')
+        if isinstance(location_restrictions, list):
+            location_restrictions = [
+                location.strip()
+                for location in location_restrictions
+                if isinstance(location, str) and location.strip()
+            ]
+        else:
+            location_restrictions = []
+
+        if location_restrictions:
+            print(
+                'Location restrictions listed by the API:',
+                ', '.join(location_restrictions)
+            )
+        else:
+            print('Location eligibility is unspecified by the API.')
+
+        print('Apply here:', job.get('applicationLink') or 'Not provided')
+        print('-' * 40)
+
+print('\n----- CV BUILDER-----')
+print("Let's build a CV that matches your career goals!")
+print('1. Create a new CV')
+print('2. Review an existing CV')
+cv_choice = input('Choose an option (1 or 2): ').strip()
+
+
+def ask_yes_no(prompt):
+    while True:
+        answer = input(prompt).strip().lower()
+        if answer in ('yes', 'no'):
+            return answer
+        print('Invalid answer. Please enter yes or no.')
+
+
+def is_experience_stage(value):
+    normalized_value = re.sub(r'[^a-z0-9+]+', ' ', value.casefold()).strip()
+    stage_labels = {
+        'beginner',
+        'beginner level',
+        'entry level',
+        'entry level work experience',
+        'first time job seeker',
+        'no work experience',
+        'no work experience yet',
+        'student seeking experience',
+        'recent graduate',
+        'internship experience',
+        'freelance or contract work',
+        'self employed',
+        'volunteer experience',
+        'part time work',
+        'remote work experience',
+    }
+    return (
+        normalized_value in stage_labels
+        or normalized_value.startswith('beginner at ')
+        or bool(re.fullmatch(
+            r'\d+\+? (?:\d+ )?years? of experience',
+            normalized_value,
+        ))
+    )
+
+
+def professional_title(value):
+    known_names = {
+        'c#': 'C#',
+        'c++': 'C++',
+        'javascript': 'JavaScript',
+        'node.js': 'Node.js',
+        'power bi': 'Power BI',
+    }
+    if value.strip().casefold() in known_names:
+        return known_names[value.strip().casefold()]
+
+    title = ' '.join(value.split()).title()
+    acronyms = {
+        'Ai': 'AI',
+        'Api': 'API',
+        'Bsc': 'BSc',
+        'Css': 'CSS',
+        'Csv': 'CSV',
+        'Html': 'HTML',
+        'Ios': 'iOS',
+        'Javascript': 'JavaScript',
+        'Js': 'JavaScript',
+        'Mba': 'MBA',
+        'Msc': 'MSc',
+        'Phd': 'PhD',
+        'Sql': 'SQL',
+        'Ui': 'UI',
+        'Ux': 'UX',
+    }
+    formatted_words = []
+    for index, word in enumerate(title.split()):
+        if index and word.casefold() in {'in', 'of', 'and', 'for', 'at'}:
+            formatted_words.append(word.casefold())
+        else:
+            formatted_words.append(acronyms.get(word, word))
+    return ' '.join(formatted_words)
+
+
+def professional_institution_name(value):
+    small_words = {'and', 'at', 'for', 'in', 'of', 'the', 'to'}
+
+    def capitalize_word(match):
+        word = match.group(0)
+        if word.casefold() in small_words:
+            return word.casefold()
+        if word.isupper() and len(word) > 1:
+            return word
+        return word[0].upper() + word[1:].lower()
+
+    return re.sub(r'[A-Za-z]+', capitalize_word, ' '.join(value.split()))
+
+
+def generate_professional_summary(cv_data):
+    target_job = professional_title(cv_data['target_role'].strip())
+    work_experience = cv_data['work_experience']
+    education = cv_data['education']
+    target_requirements = next(
+        (
+            required_skills
+            for career, required_skills in career_requirements.items()
+            if career_title_matches(cv_data['target_role'], career)
+        ),
+        [],
+    )
+    relevant_skill_names = {
+        normalize_skill(skill) for skill in target_requirements
+    }
+    skills = []
+    seen_skills = set()
+    for skill in cv_data['skills']:
+        normalized_skill = normalize_skill(skill)
+        if normalized_skill in relevant_skill_names and normalized_skill not in seen_skills:
+            skills.append(professional_title(skill.strip()))
+            seen_skills.add(normalized_skill)
+
+    sentences = []
+
+    if work_experience:
+        experience = work_experience[0]
+        role = professional_title(experience['job_title'].strip())
+        company = experience['company_name'].strip()
+        if target_job:
+            opening = f'{target_job} candidate'
+        else:
+            opening = 'Candidate'
+        if role and company:
+            article = 'an' if role[:1].lower() in 'aeiou' else 'a'
+            sentences.append(f'{opening} with experience as {article} {role} at {company}.')
+        elif role:
+            article = 'an' if role[:1].lower() in 'aeiou' else 'a'
+            sentences.append(f'{opening} with experience as {article} {role}.')
+        elif company:
+            sentences.append(f'{opening} with experience at {company}.')
+        elif target_job:
+            sentences.append(f'{target_job} candidate.')
+    elif target_job:
+        sentences.append(f'An aspiring {target_job} is seeking a suitable role.')
+    else:
+        sentences.append('Aspiring professional.')
+
+    if skills:
+        if len(skills) == 1:
+            skill_list = skills[0]
+        elif len(skills) == 2:
+            skill_list = ' and '.join(skills)
+        else:
+            skill_list = (
+                ', '.join(skills[:-1])
+                + ', and '
+                + skills[-1]
+            )
+        sentences.append(f'Relevant skills include {skill_list}.')
+
+    qualification = education['qualification'].strip()
+    course = education['course'].strip()
+    institution = professional_institution_name(education['institution'])
+    graduation_year = education['graduation_year'].strip()
+    education_sentence = ''
+
+    if qualification or course or institution or graduation_year:
+        qualification_text = professional_title(qualification)
+        course_text = professional_title(course)
+        if course_text and course_text.casefold() in qualification_text.casefold():
+            course_text = ''
+
+        if qualification_text.casefold().startswith('currently pursuing '):
+            qualification_text = qualification_text[len('Currently Pursuing '):]
+
+        if qualification_text:
+            study = qualification_text
+            if course_text:
+                study += f' in {course_text}'
+        elif course_text:
+            study = course_text
+        else:
+            study = ''
+
+        year_match = re.search(r'\b(?:19|20|21)\d{2}\b', graduation_year)
+        year = year_match.group(0) if year_match else ''
+        current_year = date.today().year
+        if year and int(year) > current_year:
+            education_sentence = (
+                f'Currently pursuing {study}' if study else 'Currently studying'
+            )
+            if institution:
+                education_sentence += f' at {institution}'
+            education_sentence += f', with expected graduation in {year}.'
+        elif study:
+            education_sentence = f'Education includes {study}'
+            if institution:
+                education_sentence += f' from {institution}'
+            if year:
+                education_sentence += f' ({year})'
+            education_sentence += '.'
+        elif institution:
+            education_sentence = f'Education at {institution}.'
+
+    if education_sentence:
+        sentences.append(education_sentence)
+
+    if not sentences:
+        sentences = ['A candidate is seeking a suitable professional opportunity.']
+    if len(sentences) == 1:
+        sentences.append('The candidate is seeking a suitable opportunity.')
+    return ' '.join(sentences[:3])
+
+
+def save_cv_pdf(cv_data, cv_sections):
+    from html import escape
+    from pathlib import Path
+
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_LEFT
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import (
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+        )
+    except ImportError:
+        print(
+            'PDF creation needs ReportLab. Install the project dependencies '
+            'with: .\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt'
+        )
+        return
+
+    documents_dir = Path.home() / 'Documents' / 'JobPylot CVs'
+    full_name = cv_data['personal_details']['full_name']
+    safe_name = re.sub(r'[^A-Za-z0-9_-]+', '_', full_name).strip('_')
+    filename_stem = f'{safe_name or "JobPylot"}_CV'
+    output_path = documents_dir / f'{filename_stem}.pdf'
+    suffix = 2
+
+    try:
+        documents_dir.mkdir(parents=True, exist_ok=True)
+        while output_path.exists():
+            output_path = documents_dir / f'{filename_stem}_{suffix}.pdf'
+            suffix += 1
+
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CVTitle',
+            parent=styles['Title'],
+            alignment=TA_LEFT,
+            textColor=colors.HexColor('#17365D'),
+            fontSize=22,
+            leading=27,
+            spaceAfter=5,
+        )
+        contact_style = ParagraphStyle(
+            'CVContact',
+            parent=styles['BodyText'],
+            textColor=colors.HexColor('#52606D'),
+            fontSize=9,
+            leading=13,
+            spaceAfter=12,
+        )
+        heading_style = ParagraphStyle(
+            'CVSectionHeading',
+            parent=styles['Heading2'],
+            textColor=colors.HexColor('#176B87'),
+            fontSize=12,
+            leading=16,
+            spaceBefore=10,
+            spaceAfter=5,
+            keepWithNext=True,
+        )
+        body_style = ParagraphStyle(
+            'CVBody',
+            parent=styles['BodyText'],
+            textColor=colors.HexColor('#263238'),
+            fontSize=10,
+            leading=14,
+            spaceAfter=4,
+        )
+        story = []
+        if full_name:
+            story.append(Paragraph(escape(full_name), title_style))
+        else:
+            story.append(Paragraph('Curriculum Vitae', title_style))
+
+        contact_details = [
+            cv_data['personal_details'][field]
+            for field in ('email', 'phone', 'location', 'linkedin', 'portfolio')
+            if cv_data['personal_details'][field]
+        ]
+        if contact_details:
+            story.append(
+                Paragraph(escape(' | '.join(contact_details)), contact_style)
+            )
+        else:
+            story.append(Spacer(1, 8))
+
+        for heading, items in cv_sections:
+            if not items:
+                continue
+            story.append(Paragraph(escape(heading), heading_style))
+            for item in items:
+                safe_item = escape(item).replace('\n', '<br/>')
+                story.append(Paragraph(safe_item, body_style))
+
+        document = SimpleDocTemplate(
+            str(output_path),
+            pagesize=A4,
+            rightMargin=20 * mm,
+            leftMargin=20 * mm,
+            topMargin=18 * mm,
+            bottomMargin=18 * mm,
+            title=f'{full_name or "JobPylot"} CV',
+            author=full_name,
+        )
+        document.build(story)
+    except OSError as error:
+        print(f'Could not save the CV PDF: {error}')
+    else:
+        print(f'Your CV PDF was saved to: {output_path}')
+
+
+if cv_choice == '1':
+    print('\n----- PERSONAL INFORMATION -----')
+    full_name = input('Enter your full name: ').strip()
+    email = input('Enter your email address: ').strip()
+    phone = input('Enter your phone number: ').strip()
+    location = input('Enter your city and country: ').strip()
+    linkedin = input('Enter your LinkedIn profile (optional): ').strip()
+    portfolio = input('Enter your GitHub or portfolio link (optional): ').strip()
+
+    print('\n----- EDUCATION -----')
+    primary_school = input('Enter your primary school (optional): ').strip()
+    secondary_school = input('Enter your secondary school (optional): ').strip()
+    institution_name = input(
+        'Enter one university or tertiary institution name (optional): '
+    ).strip()
+    qualification = input('Enter your qualification: ').strip()
+    course_name = input('Enter your course of study: ').strip()
+    graduation_year = input(
+        'Enter your graduation year or expected graduation year: '
+    ).strip()
+
+    cv_data = {
+        'personal_details': {
+            'full_name': full_name,
+            'email': email,
+            'phone': phone,
+            'location': location,
+            'linkedin': linkedin,
+            'portfolio': portfolio,
+        },
+        'professional_summary': '',
+        'target_role': normalized_job,
+        'career_goal': career_goal,
+        'education': {
+            'primary_school': primary_school,
+            'secondary_school': secondary_school,
+            'institution': institution_name,
+            'qualification': qualification,
+            'course': course_name,
+            'graduation_year': graduation_year,
+        },
+        'work_experience': [],
+        'skills': [],
+        'projects_and_achievements': [],
+    }
+
+    print('\n----- WORK EXPERIENCE -----')
+    if ask_yes_no('Do you have any work experience? (yes/no): ') == 'yes':
+        while True:
+            job_title = input(
+                'Enter the job title you held (not your experience level): '
+            ).strip()
+            if job_title and not is_experience_stage(job_title):
+                break
+            print('Enter an actual job title, not a career stage or experience level.')
+        company_name = input('Enter your company or organisation name: ').strip()
+        work_location = input('Enter the job location: ').strip()
+        start_date = input('Enter your start date: ').strip()
+        end_date = input('Enter your end date (or current): ').strip()
+        responsibilities = input(
+            'Describe your responsibilities and achievements: '
+        ).strip()
+        cv_data['work_experience'].append({
+            'job_title': job_title,
+            'company_name': company_name,
+            'location': work_location,
+            'start_date': start_date,
+            'end_date': end_date,
+            'responsibilities': responsibilities,
+        })
+    else:
+        print(
+            'No problem! We can highlight your education, skills and projects instead.'
+        )
+
+    print('\n----- SKILLS -----')
+    cv_skills = input('Enter your skills, separated by commas: ').strip()
+    cv_data['skills'] = [
+        skill.strip() for skill in cv_skills.split(',') if skill.strip()
+    ]
+
+    print('\n----- PROJECTS AND ACHIEVEMENTS -----')
+    if ask_yes_no(
+        'Do you have any projects or achievements to include? (yes/no): '
+    ) == 'yes':
+        while True:
+            project = input(
+                'Describe a project or achievement, or press Enter to finish: '
+            ).strip()
+            if not project:
+                break
+            cv_data['projects_and_achievements'].append(project)
+            if ask_yes_no('Add another project or achievement? (yes/no): ') == 'no':
+                break
+
+    print('\n----- PROFESSIONAL SUMMARY -----')
+    professional_summary = generate_professional_summary(cv_data)
+    print(professional_summary)
+    edited_summary = input(
+        'Press Enter to use this summary, or type an edited version: '
+    ).strip()
+    if edited_summary:
+        professional_summary = edited_summary
+    cv_data['professional_summary'] = professional_summary
+
+    personal_details = cv_data['personal_details']
+    contact_details = [
+        personal_details[field]
+        for field in ('email', 'phone', 'location', 'linkedin', 'portfolio')
+        if personal_details[field]
+    ]
+    education = cv_data['education']
+    education_details = []
+    qualification_text = professional_title(education['qualification'])
+    course_text = professional_title(education['course'])
+    if course_text and course_text.casefold() in qualification_text.casefold():
+        course_text = ''
+    qualification_and_course = ' in '.join(
+        value for value in (qualification_text, course_text) if value
+    )
+    if qualification_and_course:
+        education_details.append(qualification_and_course)
+    for field, label in (
+        ('primary_school', 'Primary school'),
+        ('secondary_school', 'Secondary school'),
+        ('institution', 'University / tertiary institution'),
+    ):
+        if education[field]:
+            education_details.append(
+                f'{label}: {professional_institution_name(education[field])}'
+            )
+    if education['graduation_year']:
+        year_match = re.search(
+            r'\b(?:19|20|21)\d{2}\b',
+            education['graduation_year'],
+        )
+        if year_match and int(year_match.group(0)) > date.today().year:
+            education_details.append(
+                f'Expected graduation: {year_match.group(0)}'
+            )
+        else:
+            education_details.append(
+                f'Graduation year: {education["graduation_year"]}'
+            )
+    cv_sections = [
+        ('PROFESSIONAL SUMMARY', [cv_data['professional_summary']]
+         if cv_data['professional_summary'] else []),
+        ('TARGET ROLE', [cv_data['target_role']] if cv_data['target_role'] else []),
+        ('CAREER GOAL', [cv_data['career_goal']] if cv_data['career_goal'] else []),
+        ('EDUCATION', [detail for detail in education_details if detail]),
+    ]
+
+    if cv_data['work_experience']:
+        work_experience_details = []
+        for experience in cv_data['work_experience']:
+            details = [
+                ' | '.join(
+                    value for value in (
+                        experience['job_title'],
+                        experience['company_name'],
+                    ) if value
+                ),
+                experience['location'],
+                ' - '.join(
+                    value for value in (
+                        experience['start_date'],
+                        experience['end_date'],
+                    ) if value
+                ),
+                experience['responsibilities'],
+            ]
+            work_experience_details.extend(
+                detail for detail in details if detail
+            )
+        cv_sections.append(('WORK EXPERIENCE', work_experience_details))
+
+    if cv_data['skills']:
+        cv_sections.append(('SKILLS', [', '.join(cv_data['skills'])]))
+
+    if cv_data['projects_and_achievements']:
+        cv_sections.append((
+            'PROJECTS AND ACHIEVEMENTS',
+            [f'- {project}' for project in cv_data['projects_and_achievements']],
+        ))
+
+    print('\n----- CV PREVIEW -----')
+    print(personal_details['full_name'] or 'Curriculum Vitae')
+    if contact_details:
+        print(' | '.join(contact_details))
+    for heading, items in cv_sections:
+        if items:
+            print(f'\n{heading}')
+            for item in items:
+                print(item)
+
+    save_cv_pdf(cv_data, cv_sections)
+elif cv_choice == '2':
+    print(
+        'Existing CV review is not implemented yet. No existing CV has '
+        'been provided or reviewed.'
+    )
+else:
+    print('Invalid choice. Please choose 1 or 2.')

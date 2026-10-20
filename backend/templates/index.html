@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f7f8f5">
+    <meta name="description" content="JobPylot AI helps you discover career opportunities, build a CV, grow your skills, and showcase your work.">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23176b63'/%3E%3Cpath d='M7 28 16 10l5 11 4-8 8 15h-7l-4-7-4 7H7Z' fill='white'/%3E%3C/svg%3E">
+    <title>JobPylot AI | Your next career move, made clearer</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --ink: #172b3b;
+            --muted: #5c6b75;
+            --brand: #176b63;
+            --brand-dark: #10534d;
+            --brand-soft: #e5f2ec;
+            --canvas: #f7f8f5;
+            --surface: #ffffff;
+            --line: #e1e8e3;
+            --gold: #f2c66d;
+            --shadow: 0 22px 60px rgba(23, 43, 59, 0.12);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: var(--canvas);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 3px solid #d7982d;
+            outline-offset: 4px;
+        }
+
+        .skip-link {
+            position: absolute;
+            z-index: 10;
+            top: 0.75rem;
+            left: 0.75rem;
+            padding: 0.65rem 1rem;
+            transform: translateY(-160%);
+            border-radius: 0.5rem;
+            background: var(--ink);
+            color: white;
+        }
+
+        .skip-link:focus {
+            transform: translateY(0);
+        }
+
+        .shell {
+            width: min(1160px, calc(100% - 3rem));
+            margin-inline: auto;
+        }
+
+        .site-header {
+            position: relative;
+            z-index: 2;
+            border-bottom: 1px solid rgba(225, 232, 227, 0.8);
+            background: rgba(247, 248, 245, 0.94);
+        }
+
+        .nav-row {
+            display: flex;
+            min-height: 82px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: var(--ink);
+            font-size: 1.08rem;
+            font-weight: 760;
+            letter-spacing: -0.035em;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .brand-mark {
+            display: grid;
+            width: 38px;
+            height: 38px;
+            place-items: center;
+            border-radius: 12px;
+            background: var(--brand);
+            color: white;
+        }
+
+        .brand-mark svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .primary-nav ul {
+            display: flex;
+            align-items: center;
+            gap: clamp(1.1rem, 3vw, 2.25rem);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .primary-nav a,
+        .nav-soon {
+            color: #455761;
+            font-size: 0.91rem;
+            font-weight: 620;
+            text-decoration: none;
+        }
+
+        .primary-nav a:hover {
+            color: var(--brand);
+        }
+
+        .nav-soon {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: #5c6c66;
+            cursor: not-allowed;
+        }
+
+        .soon-tag {
+            padding: 0.08rem 0.4rem;
+            border-radius: 999px;
+            background: #edf0ed;
+            color: #53615d;
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.035em;
+            text-transform: uppercase;
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(4rem, 8vw, 7.2rem) 0 clamp(4.8rem, 8vw, 7rem);
+        }
+
+        .hero::before {
+            position: absolute;
+            top: -12rem;
+            right: -9rem;
+            width: min(58vw, 680px);
+            aspect-ratio: 1;
+            border: 1px solid rgba(23, 107, 99, 0.09);
+            border-radius: 50%;
+            box-shadow: 0 0 0 48px rgba(23, 107, 99, 0.025), 0 0 0 96px rgba(23, 107, 99, 0.02);
+            content: "";
+            pointer-events: none;
+        }
+
+        .hero-grid {
+            position: relative;
+            display: grid;
+            align-items: center;
+            gap: clamp(3rem, 7vw, 6rem);
+            grid-template-columns: minmax(0, 1.05fr) minmax(350px, 0.95fr);
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.55rem;
+            margin: 0 0 1.2rem;
+            color: var(--brand);
+            font-size: 0.78rem;
+            font-weight: 760;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            width: 24px;
+            height: 2px;
+            background: var(--gold);
+            content: "";
+        }
+
+        h1,
+        h2,
+        h3,
+        p {
+            margin-top: 0;
+        }
+
+        h1 {
+            max-width: 650px;
+            margin-bottom: 1.25rem;
+            font-size: clamp(2.8rem, 6vw, 5.25rem);
+            font-weight: 740;
+            letter-spacing: -0.065em;
+            line-height: 1.02;
+        }
+
+        h1 span {
+            color: var(--brand);
+        }
+
+        .hero-copy {
+            max-width: 540px;
+            margin-bottom: 2rem;
+            color: var(--muted);
+            font-size: clamp(1.05rem, 1.7vw, 1.19rem);
+            line-height: 1.75;
+        }
+
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.85rem;
+        }
+
+        .button {
+            display: inline-flex;
+            min-height: 50px;
+            align-items: center;
+            justify-content: center;
+            gap: 0.65rem;
+            padding: 0.78rem 1.2rem;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            font: inherit;
+            font-size: 0.94rem;
+            font-weight: 690;
+            text-decoration: none;
+        }
+
+        .button-primary {
+            background: var(--brand);
+            color: white;
+            box-shadow: 0 7px 16px rgba(23, 107, 99, 0.15);
+        }
+
+        .button-primary[aria-disabled="true"],
+        .button-secondary[aria-disabled="true"] {
+            cursor: not-allowed;
+        }
+
+        .button-primary[aria-disabled="true"] {
+            background: #668b84;
+            box-shadow: none;
+        }
+
+        .button-secondary {
+            border-color: #cdd8d1;
+            background: rgba(255, 255, 255, 0.55);
+            color: var(--ink);
+        }
+
+        .button-secondary[aria-disabled="true"] {
+            color: #65716e;
+        }
+
+        .action-note {
+            width: 100%;
+            margin: 0.1rem 0 0;
+            color: #6c7877;
+            font-size: 0.8rem;
+        }
+
+        .hero-art {
+            position: relative;
+            min-height: 410px;
+            padding: 2rem 1rem;
+        }
+
+        .dashboard {
+            position: relative;
+            z-index: 1;
+            width: min(100%, 450px);
+            margin: 0 auto;
+            padding: 1.5rem;
+            border: 1px solid rgba(225, 232, 227, 0.85);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.94);
+            box-shadow: var(--shadow);
+            transform: rotate(1.5deg);
+        }
+
+        .dash-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .dash-label {
+            margin: 0;
+            color: #65746e;
+            font-size: 0.78rem;
+            font-weight: 690;
+        }
+
+        .dash-avatar {
+            display: grid;
+            width: 34px;
+            height: 34px;
+            place-items: center;
+            border-radius: 50%;
+            background: #f8e7c2;
+            color: #795521;
+            font-size: 0.75rem;
+            font-weight: 750;
+        }
+
+        .dash-heading {
+            margin-bottom: 1.1rem;
+            font-size: 1.42rem;
+            letter-spacing: -0.04em;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.45rem;
+            color: #60706d;
+            font-size: 0.72rem;
+            font-weight: 650;
+        }
+
+        .progress-track {
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 1.45rem;
+            border-radius: 99px;
+            background: #eaf0ec;
+        }
+
+        .progress-value {
+            width: 68%;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #176b63, #77b69d);
+        }
+
+        .mini-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin-top: 0.65rem;
+            padding: 0.8rem;
+            border: 1px solid #edf0ed;
+            border-radius: 12px;
+            background: #fff;
+        }
+
+        .mini-icon {
+            display: grid;
+            width: 39px;
+            height: 39px;
+            flex: 0 0 auto;
+            place-items: center;
+            border-radius: 11px;
+            background: var(--brand-soft);
+            color: var(--brand);
+        }
+
+        .mini-icon svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .mini-card strong,
+        .mini-card small {
+            display: block;
+        }
+
+        .mini-card strong {
+            font-size: 0.85rem;
+            line-height: 1.3;
+        }
+
+        .mini-card small {
+            margin-top: 0.15rem;
+            color: #5d6b67;
+            font-size: 0.72rem;
+        }
+
+        .floating-note {
+            position: absolute;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.8rem 1rem;
+            border: 1px solid rgba(225, 232, 227, 0.9);
+            border-radius: 13px;
+            background: white;
+            box-shadow: 0 12px 30px rgba(23, 43, 59, 0.1);
+            font-size: 0.78rem;
+            font-weight: 690;
+        }
+
+        .floating-note svg {
+            width: 18px;
+            height: 18px;
+            color: var(--brand);
+        }
+
+        .note-one {
+            top: 9%;
+            right: -1%;
+        }
+
+        .note-two {
+            bottom: 9%;
+            left: -2%;
+        }
+
+        .section {
+            padding: clamp(4.2rem, 8vw, 6.5rem) 0;
+        }
+
+        .section-heading {
+            max-width: 650px;
+            margin: 0 auto 2.7rem;
+            text-align: center;
+        }
+
+        .section-heading .eyebrow {
+            justify-content: center;
+        }
+
+        .section-heading h2 {
+            margin-bottom: 0.8rem;
+            font-size: clamp(2rem, 4vw, 3.15rem);
+            letter-spacing: -0.05em;
+            line-height: 1.1;
+        }
+
+        .section-heading p {
+            margin-bottom: 0;
+            color: var(--muted);
+        }
+
+        .features {
+            border-top: 1px solid var(--line);
+            background: #fff;
+        }
+
+        .feature-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .feature-card {
+            min-height: 235px;
+            padding: 1.45rem;
+            border: 1px solid var(--line);
+            border-radius: 15px;
+            background: #fff;
+            transition: transform 160ms ease, box-shadow 160ms ease;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 12px 32px rgba(23, 43, 59, 0.07);
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            display: grid;
+            width: 47px;
+            height: 47px;
+            margin-bottom: 1.35rem;
+            place-items: center;
+            border-radius: 14px;
+            background: var(--brand-soft);
+            color: var(--brand);
+        }
+
+        .feature-icon svg {
+            width: 23px;
+            height: 23px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+            letter-spacing: -0.02em;
+        }
+
+        .feature-card p {
+            margin-bottom: 0;
+            color: var(--muted);
+            font-size: 0.89rem;
+            line-height: 1.65;
+        }
+
+        .feature-card .coming-label {
+            display: inline-block;
+            margin-top: 1rem;
+            color: #5d6b67;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .closing {
+            padding: 0 0 clamp(4rem, 8vw, 6rem);
+            background: #fff;
+        }
+
+        .closing-panel {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2rem;
+            padding: clamp(1.7rem, 5vw, 3.2rem);
+            border-radius: 20px;
+            background: #173c3a;
+            color: white;
+        }
+
+        .closing-panel h2 {
+            max-width: 580px;
+            margin-bottom: 0.55rem;
+            font-size: clamp(1.65rem, 3.3vw, 2.45rem);
+            letter-spacing: -0.045em;
+            line-height: 1.12;
+        }
+
+        .closing-panel p {
+            max-width: 540px;
+            margin-bottom: 0;
+            color: #c4d7d0;
+            font-size: 0.93rem;
+        }
+
+        .closing-panel .button {
+            flex: 0 0 auto;
+            border-color: rgba(255, 255, 255, 0.27);
+            color: white;
+        }
+
+        .site-footer {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--line);
+            background: #fff;
+            color: #6c7976;
+            font-size: 0.8rem;
+        }
+
+        .footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .footer-row p {
+            margin: 0;
+        }
+
+        @media (max-width: 900px) {
+            .hero-grid {
+                gap: 2rem;
+                grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr);
+            }
+
+            .feature-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .hero-art {
+                min-height: 350px;
+            }
+
+            .dashboard {
+                padding: 1.2rem;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .shell {
+                width: min(100% - 2rem, 560px);
+            }
+
+            .nav-row {
+                min-height: auto;
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 0.85rem;
+                padding-block: 1rem;
+            }
+
+            .primary-nav {
+                width: 100%;
+                overflow-x: auto;
+                padding: 0.2rem 0 0.35rem;
+            }
+
+            .primary-nav ul {
+                width: max-content;
+                gap: 1.25rem;
+            }
+
+            .primary-nav a,
+            .nav-soon {
+                font-size: 0.83rem;
+            }
+
+            .nav-soon .soon-tag {
+                display: none;
+            }
+
+            .hero {
+                padding-top: 3.6rem;
+                padding-bottom: 3.8rem;
+            }
+
+            .hero-grid {
+                gap: 1.8rem;
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                max-width: 530px;
+                font-size: clamp(2.75rem, 13vw, 4.1rem);
+            }
+
+            .hero-art {
+                min-height: 330px;
+                padding: 1.2rem 0.35rem;
+            }
+
+            .dashboard {
+                width: min(100%, 430px);
+            }
+
+            .note-one {
+                top: 2%;
+                right: -0.3rem;
+            }
+
+            .note-two {
+                bottom: 2%;
+                left: -0.3rem;
+            }
+
+            .section-heading {
+                margin-bottom: 2rem;
+                text-align: left;
+            }
+
+            .section-heading .eyebrow {
+                justify-content: flex-start;
+            }
+
+            .closing-panel,
+            .footer-row {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .hero-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .hero-actions .button {
+                width: 100%;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feature-card {
+                min-height: auto;
+            }
+
+            .hero-art {
+                min-height: 300px;
+            }
+
+            .floating-note {
+                padding: 0.65rem 0.75rem;
+                font-size: 0.69rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a class="skip-link" href="#main-content">Skip to main content</a>
+
+    <header class="site-header">
+        <div class="shell nav-row">
+            <a class="brand" href="#home" aria-label="JobPylot AI home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 17.5 10.1 6l3.2 7.1 2-4.1L20 17.5h-4.4l-2.3-4.1-2.2 4.1H5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>JobPylot AI</span>
+            </a>
+            <nav class="primary-nav" aria-label="Main navigation">
+                <ul>
+                    <li><a href="#home" aria-current="page">Home</a></li>
+                    <li><span class="nav-soon" aria-label="Jobs, coming soon">Jobs <span class="soon-tag">Soon</span></span></li>
+                    <li><span class="nav-soon" aria-label="CV Builder, coming soon">CV Builder <span class="soon-tag">Soon</span></span></li>
+                    <li><span class="nav-soon" aria-label="Portfolio, coming soon">Portfolio <span class="soon-tag">Soon</span></span></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content">
+        <section class="hero" id="home" aria-labelledby="hero-title">
+            <div class="shell hero-grid">
+                <div>
+                    <p class="eyebrow">Your career journey, with direction</p>
+                    <h1 id="hero-title">Your next career move, <span>made clearer.</span></h1>
+                    <p class="hero-copy">
+                        JobPylot AI helps you discover opportunities, build a confident CV,
+                        grow job-ready skills, and showcase the work that makes you unique.
+                        Take your next step with a little more clarity.
+                    </p>
+                    <div class="hero-actions" aria-label="Career tools">
+                        <span class="button button-primary" aria-disabled="true">Build Your CV <span aria-hidden="true">→</span></span>
+                        <span class="button button-secondary" aria-disabled="true">Explore Jobs <span aria-hidden="true">↗</span></span>
+                        <p class="action-note">Web-based tools are coming soon. Use the current Python app for available features.</p>
+                    </div>
+                </div>
+
+                <div class="hero-art" aria-label="Illustration of a career profile dashboard">
+                    <div class="dashboard">
+                        <div class="dash-top">
+                            <p class="dash-label">YOUR CAREER SNAPSHOT</p>
+                            <span class="dash-avatar" aria-hidden="true">JP</span>
+                        </div>
+                        <h2 class="dash-heading">A path that fits you</h2>
+                        <div class="progress-label">
+                            <span>Profile progress</span>
+                            <span>68%</span>
+                        </div>
+                        <div class="progress-track" role="img" aria-label="Illustrative profile progress: 68 percent">
+                            <div class="progress-value"></div>
+                        </div>
+                        <div class="mini-card">
+                            <span class="mini-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8"/>
+                                    <path d="m15.5 15.5 4.2 4.2M8.5 10.8h4.6M10.8 8.5v4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                                </svg>
+                            </span>
+                            <span><strong>Explore opportunities</strong><small>Find your next direction</small></span>
+                        </div>
+                        <div class="mini-card">
+                            <span class="mini-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M7 4.8h7l4 4v10.4H7a2 2 0 0 1-2-2V6.8a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                                    <path d="M14 5v4h4M8.5 13h7M8.5 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                </svg>
+                            </span>
+                            <span><strong>Make your experience count</strong><small>Present your strengths clearly</small></span>
+                        </div>
+                    </div>
+                    <div class="floating-note note-one">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        Small steps add up
+                    </div>
+                    <div class="floating-note note-two">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <path d="m12 3 2.6 5.3 5.9.9-4.3 4.2 1 5.9-5.2-2.8-5.2 2.8 1-5.9-4.3-4.2 5.9-.9L12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                        </svg>
+                        Build toward your goals
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section features" id="features" aria-labelledby="features-title">
+            <div class="shell">
+                <div class="section-heading">
+                    <p class="eyebrow">Career support that moves with you</p>
+                    <h2 id="features-title">Everything you need to take the next step</h2>
+                    <p>Practical tools to help you make progress, whether you are starting out or ready for a change.</p>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="10.8" cy="10.8" r="6.3" stroke="currentColor" stroke-width="1.8"/>
+                                <path d="m15.5 15.5 4.2 4.2M8.5 10.8h4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <h3>Discover job opportunities</h3>
+                        <p>Explore roles that align with your interests, experience, and career direction.</p>
+                        <span class="coming-label">Web experience coming soon</span>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M7 4.8h7l4 4v10.4H7a2 2 0 0 1-2-2V6.8a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                                <path d="M14 5v4h4M8.5 13h7M8.5 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <h3>Build a stronger CV</h3>
+                        <p>Organize your experience and skills into a clear, professional CV.</p>
+                        <span class="coming-label">Web experience coming soon</span>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M4.5 18.5 9 13l3 2.5 7.5-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M14.5 6.5h5v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <h3>Grow useful skills</h3>
+                        <p>Understand which abilities matter for your target role and plan what to learn next.</p>
+                        <span class="coming-label">Career guidance available</span>
+                    </article>
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <rect x="4.5" y="5" width="15" height="14" rx="2" stroke="currentColor" stroke-width="1.7"/>
+                                <circle cx="9" cy="10" r="1.5" stroke="currentColor" stroke-width="1.6"/>
+                                <path d="m6.5 16 3.5-3 2.5 2 2.5-2 2.5 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <h3>Showcase your work</h3>
+                        <p>Bring your projects, achievements, and portfolio together in one polished place.</p>
+                        <span class="coming-label">Coming soon</span>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="closing" aria-labelledby="closing-title">
+            <div class="shell">
+                <div class="closing-panel">
+                    <div>
+                        <h2 id="closing-title">Your next step starts with a plan.</h2>
+                        <p>JobPylot AI is growing. Explore the current career assistant and check back as more web tools become available.</p>
+                    </div>
+                    <span class="button button-secondary" aria-disabled="true">More tools coming soon</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div class="shell footer-row">
+            <a class="brand" href="#home">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M5 17.5 10.1 6l3.2 7.1 2-4.1L20 17.5h-4.4l-2.3-4.1-2.2 4.1H5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <span>JobPylot AI</span>
+            </a>
+            <p>Clearer steps toward your career goals.</p>
+            <p>&copy; 2026 JobPylot AI</p>
+        </div>
+    </footer>
+</body>
+</html>
