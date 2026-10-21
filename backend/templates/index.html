@@ -527,6 +527,115 @@
             background: #fff;
         }
 
+        .job-search {
+            padding: clamp(3.5rem, 7vw, 5.5rem) 0;
+            background: #fff;
+        }
+
+        .job-search-panel {
+            padding: clamp(1.25rem, 4vw, 2.5rem);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            background: var(--canvas);
+        }
+
+        .job-search-form {
+            display: grid;
+            align-items: end;
+            gap: 1rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            margin-top: 1.5rem;
+        }
+
+        .job-search-form label {
+            display: grid;
+            gap: 0.4rem;
+            color: var(--ink);
+            font-size: 0.88rem;
+            font-weight: 650;
+        }
+
+        .job-search-form input,
+        .job-search-form select {
+            width: 100%;
+            min-height: 46px;
+            padding: 0.65rem 0.75rem;
+            border: 1px solid #cdd8d1;
+            border-radius: 8px;
+            background: white;
+            color: var(--ink);
+            font: inherit;
+            font-size: 0.93rem;
+        }
+
+        .job-search-form input:focus,
+        .job-search-form select:focus {
+            outline: 3px solid rgba(23, 107, 99, 0.2);
+            border-color: var(--brand);
+        }
+
+        .job-search-submit {
+            min-height: 46px;
+            cursor: pointer;
+        }
+
+        .job-search-submit:disabled {
+            cursor: wait;
+            opacity: 0.7;
+        }
+
+        .job-search-note,
+        .job-search-status {
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .job-search-note {
+            margin: 1rem 0 0;
+        }
+
+        .job-search-status {
+            min-height: 1.5rem;
+            margin: 1.5rem 0 0;
+        }
+
+        .job-results {
+            display: grid;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .job-result {
+            padding: 1.25rem;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            background: white;
+        }
+
+        .job-result h3 {
+            margin-bottom: 0.35rem;
+            color: var(--brand-dark);
+            font-size: 1.1rem;
+        }
+
+        .job-result-meta {
+            margin-bottom: 0.75rem;
+            color: var(--muted);
+            font-size: 0.87rem;
+        }
+
+        .job-result-description {
+            margin-bottom: 0.75rem;
+            color: #354953;
+            font-size: 0.92rem;
+            white-space: pre-wrap;
+        }
+
+        .job-result-link {
+            color: var(--brand-dark);
+            font-weight: 680;
+        }
+
         .closing-panel {
             display: flex;
             align-items: center;
@@ -586,6 +695,10 @@
 
             .feature-grid {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .job-search-form {
+                grid-template-columns: 1fr;
             }
 
             .hero-art {
@@ -734,7 +847,7 @@
             <nav class="primary-nav" aria-label="Main navigation">
                 <ul>
                     <li><a href="#home" aria-current="page">Home</a></li>
-                    <li><span class="nav-soon" aria-label="Jobs, coming soon">Jobs <span class="soon-tag">Soon</span></span></li>
+                    <li><a href="#jobs">Jobs</a></li>
                     <li><span class="nav-soon" aria-label="CV Builder, coming soon">CV Builder <span class="soon-tag">Soon</span></span></li>
                     <li><span class="nav-soon" aria-label="Portfolio, coming soon">Portfolio <span class="soon-tag">Soon</span></span></li>
                 </ul>
@@ -755,8 +868,8 @@
                     </p>
                     <div class="hero-actions" aria-label="Career tools">
                         <span class="button button-primary" aria-disabled="true">Build Your CV <span aria-hidden="true">→</span></span>
-                        <span class="button button-secondary" aria-disabled="true">Explore Jobs <span aria-hidden="true">↗</span></span>
-                        <p class="action-note">Web-based tools are coming soon. Use the current Python app for available features.</p>
+                        <a class="button button-secondary" href="#jobs">Explore Jobs <span aria-hidden="true">↗</span></a>
+                        <p class="action-note">Search current job listings by role and city.</p>
                     </div>
                 </div>
 
@@ -809,6 +922,45 @@
             </div>
         </section>
 
+        <section class="job-search" id="jobs" aria-labelledby="jobs-title">
+            <div class="shell">
+                <div class="section-heading">
+                    <p class="eyebrow">Explore current opportunities</p>
+                    <h2 id="jobs-title">Search jobs by title and city</h2>
+                    <p>Search Jooble listings for your chosen role and location. Results depend on what Jooble currently returns.</p>
+                </div>
+                <div class="job-search-panel">
+                    <form class="job-search-form" id="job-search-form">
+                        <label>
+                            Job title
+                            <input name="title" type="text" maxlength="100" placeholder="e.g. Backend Engineer" required>
+                        </label>
+                        <label>
+                            City
+                            <input name="city" type="text" maxlength="100" placeholder="e.g. Lagos" required>
+                        </label>
+                        <label>
+                            Country
+                            <input name="country" type="text" maxlength="100" value="Nigeria" required>
+                        </label>
+                        <label>
+                            Work arrangement
+                            <select name="arrangement">
+                                <option value="Any" selected>Any arrangement</option>
+                                <option value="Onsite">Onsite</option>
+                                <option value="Hybrid">Hybrid</option>
+                                <option value="Remote">Remote</option>
+                            </select>
+                        </label>
+                        <button class="button button-primary job-search-submit" type="submit">Search jobs</button>
+                    </form>
+                    <p class="job-search-note">Work-arrangement choices are matched only when Jooble's returned listing text identifies the arrangement.</p>
+                    <p class="job-search-status" id="job-search-status" role="status" aria-live="polite"></p>
+                    <div class="job-results" id="job-results" aria-live="polite"></div>
+                </div>
+            </div>
+        </section>
+
         <section class="section features" id="features" aria-labelledby="features-title">
             <div class="shell">
                 <div class="section-heading">
@@ -826,8 +978,8 @@
                             </svg>
                         </span>
                         <h3>Discover job opportunities</h3>
-                        <p>Explore roles that align with your interests, experience, and career direction.</p>
-                        <span class="coming-label">Web experience coming soon</span>
+                        <p>Find current listings for roles and locations that fit your plans.</p>
+                        <a class="coming-label" href="#jobs">Search jobs</a>
                     </article>
                     <article class="feature-card">
                         <span class="feature-icon" aria-hidden="true">
@@ -894,5 +1046,81 @@
             <p>&copy; 2026 JobPylot AI</p>
         </div>
     </footer>
+    <script>
+        const jobSearchForm = document.getElementById("job-search-form");
+        const jobSearchStatus = document.getElementById("job-search-status");
+        const jobResults = document.getElementById("job-results");
+
+        function appendJobText(parent, tagName, value, className) {
+            if (typeof value !== "string" || !value.trim()) return;
+            const element = document.createElement(tagName);
+            if (className) element.className = className;
+            element.textContent = value;
+            parent.append(element);
+        }
+
+        function renderJob(job) {
+            const card = document.createElement("article");
+            card.className = "job-result";
+            appendJobText(card, "h3", job.title);
+
+            const details = [job.company, job.location, job.posted_at]
+                .filter((value) => typeof value === "string" && value.trim());
+            appendJobText(card, "p", details.join(" · "), "job-result-meta");
+            appendJobText(card, "p", job.description, "job-result-description");
+            appendJobText(card, "p", job.source, "job-result-meta");
+
+            if (typeof job.url === "string") {
+                try {
+                    const listingUrl = new URL(job.url);
+                    if (listingUrl.protocol === "http:" || listingUrl.protocol === "https:") {
+                        const link = document.createElement("a");
+                        link.className = "job-result-link";
+                        link.href = listingUrl.href;
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.textContent = "View original listing";
+                        card.append(link);
+                    }
+                } catch {
+                    // Ignore malformed listing URLs supplied by external data.
+                }
+            }
+            return card;
+        }
+
+        jobSearchForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const submitButton = jobSearchForm.querySelector("button[type='submit']");
+            const params = new URLSearchParams(new FormData(jobSearchForm));
+            jobResults.replaceChildren();
+            jobSearchStatus.textContent = "Searching Jooble...";
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(`/jobs?${params.toString()}`);
+                const data = await response.json();
+                if (!response.ok) {
+                    jobSearchStatus.textContent = data.detail || "Job search failed. Please try again.";
+                    return;
+                }
+                if (!Array.isArray(data.jobs)) {
+                    jobSearchStatus.textContent = "Jooble returned an unexpected response. Please try again later.";
+                    return;
+                }
+                if (data.jobs.length === 0) {
+                    jobSearchStatus.textContent = `Jooble returned no listings for ${data.query} in ${data.city}, ${data.country}. This does not confirm that no such jobs exist; try another search or check again later.`;
+                    return;
+                }
+
+                jobSearchStatus.textContent = `Jooble returned ${data.jobs.length} listing${data.jobs.length === 1 ? "" : "s"}.`;
+                jobResults.replaceChildren(...data.jobs.map(renderJob));
+            } catch {
+                jobSearchStatus.textContent = "Could not reach the job search service. Check your connection and try again.";
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
+    </script>
 </body>
 </html>

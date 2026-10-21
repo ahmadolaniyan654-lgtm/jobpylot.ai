@@ -1,198 +1,178 @@
+import os
 import re
-import time
+from collections.abc import Mapping
+from pathlib import Path
+from typing import Literal
 
 import requests
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
-from pathlib import Path
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = FastAPI(title="JobPylot AI API")
 
-JOBS_API_URL = "https://himalayas.app/jobs/api"
-MAX_JOB_BATCHES = 25
-MAX_JOB_RESULTS = 5
+JOOBLE_API_URL = "https://jooble.org/api"
 JOB_REQUEST_TIMEOUT = 15
-JOB_REQUEST_ATTEMPTS = 3
-
-JOB_WORD_GROUPS = (
-    {"accountant", "accountants", "accounting"},
-    {"analyst", "analysts", "analysis", "analytic", "analytics"},
-    {"architect", "architects", "architecture"},
-    {"designer", "designers", "design", "designing"},
-    {"developer", "developers", "development"},
-    {"economist", "economists", "economic", "economics"},
-    {"engineer", "engineers", "engineering"},
-    {"lecturer", "lecturers", "teacher", "teachers", "teaching", "educator", "educators"},
-    {"manager", "managers", "management"},
-    {"marketer", "marketers", "marketing"},
-    {"nurse", "nurses", "nursing"},
-    {"programmer", "programmers", "programming"},
-    {"psychologist", "psychologists", "psychology"},
-    {"researcher", "researchers", "research"},
-    {"scientist", "scientists", "science"},
-)
+MAX_JOB_RESULTS = 50
+ARRANGEMENT_PATTERNS = {
+    "Remote": re.compile(r"\bremote(?:ly)?\b|\bwork from home\b|\bwfh\b", re.IGNORECASE),
+    "Hybrid": re.compile(r"\bhybrid\b", re.IGNORECASE),
+    "Onsite": re.compile(
+        r"\bonsite\b|\bon[\s-]site\b|\bin[\s-]office\b|\boffice[\s-]based\b",
+        re.IGNORECASE,
+    ),
+}
 
 
-def _word_forms(word: str) -> set[str]:
-    forms = {word}
-    for group in JOB_WORD_GROUPS:
-        if word in group:
-            forms.update(group)
-    if len(word) > 4 and word.endswith("ies"):
-        forms.add(word[:-3] + "y")
-    if len(word) > 3 and word.endswith("s") and not word.endswith(("ss", "us", "is")):
-        forms.add(word[:-1])
-    if len(word) > 5 and word.endswith("ing"):
-        stem = word[:-3]
-        forms.update((stem, stem + "e"))
-        if len(stem) > 2 and stem[-1] == stem[-2]:
-            forms.add(stem[:-1])
-    if len(word) > 4 and word.endswith("ed"):
-        stem = word[:-2]
-        forms.update((stem, stem + "e"))
-        if len(stem) > 2 and stem[-1] == stem[-2]:
-            forms.add(stem[:-1])
-    return forms
+def _optional_text(job: Mapping[str, object], field: str) -> str | None:
+    value = job.get(field)
+    return value.strip() if isinstance(value, str) and value.strip() else None
 
 
-def _title_matches(title: str, query_variants: list[list[str]]) -> bool:
-    title_words = re.findall(r"[a-z0-9]+", title.casefold())
-    title_forms = [_word_forms(word) for word in title_words]
-    for query_words in query_variants:
-        unmatched_title_words = list(title_forms)
-        for query_word in query_words:
-            query_forms = _word_forms(query_word)
-            matching_index = next(
-                (
-                    index for index, forms in enumerate(unmatched_title_words)
-                    if forms & query_forms
-                ),
-                None,
-            )
-            if matching_index is None:
-                break
-            unmatched_title_words.pop(matching_index)
-        else:
-            return True
-    return False
+def _normalize_job(job: Mapping[str, object]) -> dict[str, str]:
+    fields = {
+        "title": "title",
+        "company": "company",
+        "location": "location",
+        "description": "snippet",
+        "posted_at": "updated",
+        "url": "link",
+    }
+    normalized = {
+        target: value
+        for target, source in fields.items()
+        if (value := _optional_text(job, source)) is not None
+    }
+    normalized["source"] = "Jooble"
+    return normalized
 
 
-def _is_nigeria_eligible(job: dict) -> bool:
-    restrictions = job.get("locationRestrictions")
-    return isinstance(restrictions, list) and any(
-        isinstance(location, str) and location.strip().casefold() == "nigeria"
-        for location in restrictions
+def _matches_arrangement(job: Mapping[str, object], arrangement: str) -> bool:
+    if arrangement == "Any":
+        return True
+
+    searchable_text = " ".join(
+        value
+        for field in ("title", "location", "snippet")
+        if (value := _optional_text(job, field)) is not None
     )
+    pattern = ARRANGEMENT_PATTERNS[arrangement]
+    return bool(pattern.search(searchable_text))
 
 
-def _get_jobs_page(cursor: str | None) -> requests.Response:
-    params = {"cursor": cursor} if cursor else None
-    for attempt in range(JOB_REQUEST_ATTEMPTS):
-        try:
-            response = requests.get(
-                JOBS_API_URL,
-                params=params,
-                timeout=JOB_REQUEST_TIMEOUT,
-            )
-            if response.status_code in (429, 500, 502, 503, 504):
-                if attempt < JOB_REQUEST_ATTEMPTS - 1:
-                    retry_after = response.headers.get("Retry-After")
-                    try:
-                        delay = (
-                            max(0.0, min(float(retry_after), 5.0))
-                            if retry_after
-                            else 0.5 * (2 ** attempt)
-                        )
-                    except ValueError:
-                        delay = 0.5 * (2 ** attempt)
-                    time.sleep(delay)
-                    continue
-            response.raise_for_status()
-            return response
-        except (requests.ConnectionError, requests.Timeout):
-            if attempt == JOB_REQUEST_ATTEMPTS - 1:
-                raise
-            time.sleep(0.5 * (2 ** attempt))
+def _search_jooble(
+    title: str,
+    city: str,
+    country: str,
+    arrangement: str,
+) -> tuple[list[dict[str, str]], int | None]:
+    api_key = os.getenv("JOOBLE_API_KEY", "").strip()
+    if not api_key or api_key == "YOUR_ACTUAL_API_KEY":
+        raise HTTPException(
+            status_code=503,
+            detail="Job search is not configured. Add a valid JOOBLE_API_KEY to the .env file and restart the backend.",
+        )
 
-    raise RuntimeError("The job listings request ended without a response.")
+    try:
+        response = requests.post(
+            f"{JOOBLE_API_URL}/{api_key}",
+            json={
+                "keywords": title,
+                "location": f"{city}, {country}" if city else country,
+            },
+            timeout=JOB_REQUEST_TIMEOUT,
+        )
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=502,
+            detail="Could not connect to Jooble. Check your connection and try again.",
+        ) from None
+
+    if response.status_code in (401, 403):
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble did not accept the API key. Check that JOOBLE_API_KEY is valid.",
+        )
+    if response.status_code == 429:
+        raise HTTPException(
+            status_code=503,
+            detail="Jooble's search limit has been reached. Please wait a little and try again.",
+        )
+    if response.status_code >= 500:
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble is temporarily unavailable. Please try again later.",
+        )
+    if response.status_code >= 400:
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble could not process this search. Check the search details and try again.",
+        )
+
+    try:
+        data = response.json()
+    except (ValueError, requests.RequestException):
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble returned an unreadable response. Please try again later.",
+        ) from None
+
+    if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble returned an unexpected response. Please try again later.",
+        )
+
+    jobs = [
+        _normalize_job(job)
+        for job in data["jobs"]
+        if isinstance(job, Mapping) and _matches_arrangement(job, arrangement)
+    ][:MAX_JOB_RESULTS]
+    total_count = data.get("totalCount")
+    if not isinstance(total_count, int) or isinstance(total_count, bool) or total_count < 0:
+        total_count = None
+    return jobs, total_count
 
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
+
 @app.get("/")
-def home():
+def home() -> FileResponse:
     html_file = Path(__file__).parent / "templates" / "index.html"
     return FileResponse(html_file)
-
 
 
 @app.get("/jobs")
 def search_jobs(
     title: str = Query(min_length=1, max_length=100, description="Desired job title"),
+    city: str = Query(default="", max_length=100, description="City to search"),
+    country: str = Query(default="Nigeria", min_length=1, max_length=100),
+    arrangement: Literal["Any", "Onsite", "Hybrid", "Remote"] = "Any",
 ) -> dict[str, object]:
-    ignored_words = {"a", "an", "and", "for", "in", "of", "or", "the", "to"}
-    query_variants = [
-        [
-            word for word in re.findall(r"[a-z0-9]+", phrase.casefold())
-            if word not in ignored_words
-        ]
-        for phrase in re.split(r"\s*(?:/|\bor\b)\s*", title, flags=re.IGNORECASE)
-    ]
-    query_variants = [words for words in query_variants if words]
-    matching_jobs = []
-    cursor = None
-    seen_cursors = set()
-    batches_checked = 0
-    jobs_checked = 0
-
-    try:
-        while (
-            query_variants
-            and batches_checked < MAX_JOB_BATCHES
-            and len(matching_jobs) < MAX_JOB_RESULTS
-        ):
-            response = _get_jobs_page(cursor)
-            data = response.json()
-            if not isinstance(data, dict) or not isinstance(data.get("jobs"), list):
-                raise ValueError("The jobs service returned an unexpected response.")
-
-            batches_checked += 1
-            jobs_checked += len(data["jobs"])
-            matching_jobs.extend(
-                {
-                    "title": job["title"],
-                    "companyName": job.get("companyName") or "Not provided",
-                    "applicationLink": job.get("applicationLink") or "",
-                    "locationRestrictions": job.get("locationRestrictions") or [],
-                }
-                for job in data["jobs"]
-                if isinstance(job, dict)
-                and isinstance(job.get("title"), str)
-                and _title_matches(job["title"], query_variants)
-                and _is_nigeria_eligible(job)
-            )
-
-            next_cursor = data.get("nextCursor")
-            if (
-                not isinstance(next_cursor, str)
-                or not next_cursor
-                or next_cursor in seen_cursors
-            ):
-                break
-            seen_cursors.add(next_cursor)
-            cursor = next_cursor
-    except (requests.RequestException, ValueError) as error:
+    title = title.strip()
+    city = city.strip()
+    country = country.strip()
+    if not title or not country:
         raise HTTPException(
-            status_code=502,
-            detail=f"Job listings could not be loaded: {error}",
-        ) from error
+            status_code=422,
+            detail="Enter a job title and country before searching.",
+        )
 
-    return {
+    jobs, total_count = _search_jooble(title, city, country, arrangement)
+
+    result: dict[str, object] = {
         "query": title,
-        "location": "Nigeria",
-        "jobs_checked": jobs_checked,
-        "batches_checked": batches_checked,
-        "jobs": matching_jobs[:MAX_JOB_RESULTS],
+        "city": city or country,
+        "country": country,
+        "arrangement": arrangement,
+        "source": "Jooble",
+        "jobs": jobs,
     }
+    if total_count is not None:
+        result["total_count"] = total_count
+    return result

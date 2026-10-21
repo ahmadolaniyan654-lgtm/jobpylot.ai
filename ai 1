@@ -1520,7 +1520,31 @@ if cv_choice == '1':
         if items:
             print(f'\n{heading}')
             for item in items:
-                print(item)
+                if isinstance(item, dict):
+                    title = (
+                        item.get('title') or item.get('name')
+                        or item.get('job_title') or ''
+                    )
+                    organization = (
+                        item.get('organization') or item.get('employer')
+                        or item.get('company_name') or item.get('institution') or ''
+                    )
+                    dates = item.get('dates', '')
+                    print(' | '.join(
+                        value for value in (title, organization, dates) if value
+                    ))
+                    details = item.get('details', [])
+                    if isinstance(details, list):
+                        for detail in details:
+                            print(f'  - {detail}')
+                    elif details:
+                        print(f'  - {details}')
+                    if item.get('technologies'):
+                        print(f'  Technologies: {item["technologies"]}')
+                    if item.get('link'):
+                        print(f'  Link: {item["link"]}')
+                else:
+                    print(item)
 
     save_cv_pdf(cv_data, cv_sections)
 elif cv_choice == '2':
