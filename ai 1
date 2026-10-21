@@ -94,7 +94,6 @@ user_skills = input('What skills do you have?').lower()
 print('Your skills are:', user_skills)
 
 import re
-from datetime import date
 
 def normalize_skill(skill):
     """Normalize punctuation and generic wording for exact skill phrase matching."""
@@ -1100,136 +1099,41 @@ def professional_institution_name(value):
 
 def generate_professional_summary(cv_data):
     target_role = cv_data.get('target_role', '').strip()
-    target_job = professional_title(target_role) if target_role else ''
-    work_experience = cv_data.get('work_experience', [])
-    education = cv_data.get('education', {})
-    target_requirements = next(
-        (
-            required_skills
-            for career, required_skills in career_requirements.items()
-            if target_role and career_title_matches(target_role, career)
-        ),
-        [],
-    )
-    relevant_skill_names = {
-        normalize_skill(skill) for skill in target_requirements
-    }
-    skills = []
-    seen_skills = set()
-    for skill in cv_data.get('skills', []):
-        normalized_skill = normalize_skill(skill)
-        if normalized_skill in relevant_skill_names and normalized_skill not in seen_skills:
-            skills.append(professional_title(skill.strip()))
-            seen_skills.add(normalized_skill)
+    experience = cv_data.get('work_experience', [])
 
     sentences = []
+    if experience:
+        experience_descriptions = []
+        for entry in experience:
+            role = entry.get('job_title', '').strip()
+            company = entry.get('company_name', '').strip()
+            if role and company:
+                experience_descriptions.append(f'{role} at {company}')
+            elif role or company:
+                experience_descriptions.append(role or company)
+        if experience_descriptions:
+            if len(experience_descriptions) == 1:
+                sentences.append(f'Experience as {experience_descriptions[0]}.')
+            else:
+                sentences.append(
+                    'Experience includes '
+                    + '; '.join(experience_descriptions)
+                    + '.'
+                )
+    elif target_role:
+        sentences.append(f'Career focus: {professional_title(target_role)}.')
 
-    if work_experience:
-        experience = work_experience[0]
-        role = professional_title(experience['job_title'].strip())
-        company = experience['company_name'].strip()
-        if target_job:
-            opening = f'{target_job} candidate'
-        else:
-            opening = 'Candidate'
-        if role and company:
-            article = 'an' if role[:1].lower() in 'aeiou' else 'a'
-            sentences.append(f'{opening} with experience as {article} {role} at {company}.')
-        elif role:
-            article = 'an' if role[:1].lower() in 'aeiou' else 'a'
-            sentences.append(f'{opening} with experience as {article} {role}.')
-        elif company:
-            sentences.append(f'{opening} with experience at {company}.')
-        elif target_job:
-            sentences.append(f'{target_job} candidate.')
-    elif target_job:
-        sentences.append(f'An aspiring {target_job} is seeking a suitable role.')
-    else:
-        sentences.append('Aspiring professional.')
+    return ' '.join(sentences)
 
-    if skills:
-        if len(skills) == 1:
-            skill_list = skills[0]
-        elif len(skills) == 2:
-            skill_list = ' and '.join(skills)
-        else:
-            skill_list = (
-                ', '.join(skills[:-1])
-                + ', and '
-                + skills[-1]
-            )
-        sentences.append(f'Relevant skills include {skill_list}.')
 
-    qualification = education.get('qualification', '').strip()
-    course = education.get('course', '').strip()
-    institution_name = education.get('institution', '')
-    institution = professional_institution_name(institution_name) if institution_name else ''
-    graduation_year = education.get('graduation_year', '').strip()
-    graduation_status = education.get('graduation_status', '').strip()
-    education_sentence = ''
-
-    if qualification or course or institution or graduation_year:
-        qualification_text = professional_title(qualification)
-        course_text = professional_title(course)
-        if course_text and course_text.casefold() in qualification_text.casefold():
-            course_text = ''
-
-        qualification_is_current = bool(re.match(
-            r'currently\s+(?:pursuing|studying|enrolled)\b',
-            qualification_text,
-            re.IGNORECASE,
-        ))
-        qualification_text = re.sub(
-            r'^currently\s+(?:pursuing|studying|enrolled)\s+(?:in\s+)?',
-            '',
-            qualification_text,
-            flags=re.IGNORECASE,
-        )
-
-        if qualification_text:
-            study = qualification_text
-            if course_text:
-                study += f' in {course_text}'
-        elif course_text:
-            study = course_text
-        else:
-            study = ''
-
-        year_match = re.search(r'\b(?:19|20|21)\d{2}\b', graduation_year)
-        year = year_match.group(0) if year_match else ''
-        current_year = date.today().year
-        status_is_current = bool(re.search(
-            r'\b(?:in progress|currently pursuing|currently studying|enrolled|expected)\b',
-            graduation_status,
-            re.IGNORECASE,
-        ))
-        if (year and int(year) > current_year) or status_is_current or qualification_is_current:
-            education_sentence = (
-                f'Currently pursuing {study}' if study else 'Currently studying'
-            )
-            if institution:
-                education_sentence += f' at {institution}'
-            if year and int(year) > current_year:
-                education_sentence += f', with expected graduation in {year}'
-            education_sentence += '.'
-        elif study:
-            education_sentence = f'Education includes {study}'
-            if institution:
-                education_sentence += f' from {institution}'
-            if year:
-                education_sentence += f' ({year})'
-            education_sentence += '.'
-        elif institution:
-            education_sentence = f'Education at {institution}.'
-
-    if education_sentence:
-        sentences.append(education_sentence)
-
-    if not sentences:
-        sentences = ['A candidate is seeking a suitable professional opportunity.']
-    if len(sentences) == 1:
-        sentences.append('The candidate is seeking a suitable opportunity.')
-    return ' '.join(sentences[:3])
+def polish_user_text(value):
+    text = re.sub(r'\s+', ' ', value).strip()
+    if not text:
+        return ''
+    text = text[0].upper() + text[1:]
+    if text[-1] not in '.!?':
+        text += '.'
+    return text
 
 
 def save_cv_pdf(cv_data, cv_sections):
@@ -1243,7 +1147,6 @@ def save_cv_pdf(cv_data, cv_sections):
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import (
-            KeepTogether,
             Paragraph,
             SimpleDocTemplate,
             Table,
@@ -1272,9 +1175,18 @@ def save_cv_pdf(cv_data, cv_sections):
             alignment=TA_LEFT,
             textColor=colors.HexColor('#17324D'),
             fontName='Helvetica-Bold',
-            fontSize=24,
-            leading=29,
-            spaceAfter=6,
+            fontSize=22,
+            leading=26,
+            spaceAfter=2,
+        )
+        role_style = ParagraphStyle(
+            'CVRole',
+            parent=styles['BodyText'],
+            textColor=colors.HexColor('#176B63'),
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            leading=13,
+            spaceAfter=0,
         )
         contact_style = ParagraphStyle(
             'CVContact',
@@ -1282,17 +1194,17 @@ def save_cv_pdf(cv_data, cv_sections):
             textColor=colors.HexColor('#536477'),
             fontSize=8.5,
             leading=12,
-            spaceAfter=10,
+            spaceAfter=7,
         )
         heading_style = ParagraphStyle(
             'CVSectionHeading',
             parent=styles['Heading2'],
-            textColor=colors.HexColor('#176B63'),
+            textColor=colors.HexColor('#17324D'),
             fontName='Helvetica-Bold',
-            fontSize=11,
-            leading=14,
-            spaceBefore=10,
-            spaceAfter=5,
+            fontSize=10.5,
+            leading=13,
+            spaceBefore=8,
+            spaceAfter=4,
             keepWithNext=True,
         )
         body_style = ParagraphStyle(
@@ -1335,12 +1247,32 @@ def save_cv_pdf(cv_data, cv_sections):
             bulletIndent=0,
             spaceAfter=2,
         )
+        left_margin = 20 * mm
+        right_margin = 20 * mm
+        top_margin = 15 * mm
+        bottom_margin = 19 * mm
         story = []
-        if full_name:
-            story.append(Paragraph(escape(full_name), title_style))
-        else:
-            story.append(Paragraph('Curriculum Vitae', title_style))
-
+        display_name = full_name or 'Curriculum Vitae'
+        target_role = cv_data.get('target_role', '').strip()
+        header_content = [Paragraph(escape(display_name), title_style)]
+        if target_role:
+            header_content.append(
+                Paragraph(escape(professional_title(target_role)), role_style)
+            )
+        header = Table(
+            [[header_content]],
+            colWidths=[A4[0] - left_margin - right_margin],
+        )
+        header.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#F0F5F7')),
+            ('BOX', (0, 0), (-1, -1), 0.5, colors.HexColor('#D9E4E8')),
+            ('LINEBELOW', (0, 0), (-1, -1), 2, colors.HexColor('#176B63')),
+            ('LEFTPADDING', (0, 0), (-1, -1), 10),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        story.append(header)
         contact_details = [
             personal_details.get(field, '').strip()
             for field in ('email', 'phone', 'location', 'linkedin', 'portfolio')
@@ -1350,7 +1282,7 @@ def save_cv_pdf(cv_data, cv_sections):
         if contact_details:
             story.append(
                 Paragraph(
-                    ' &nbsp;|&nbsp; '.join(escape(value) for value in contact_details),
+                    ' &nbsp;&bull;&nbsp; '.join(escape(value) for value in contact_details),
                     contact_style,
                 )
             )
@@ -1437,11 +1369,6 @@ def save_cv_pdf(cv_data, cv_sections):
                     )
             return flowables
 
-        page_width, _ = A4
-        left_margin = 20 * mm
-        right_margin = 20 * mm
-        top_margin = 18 * mm
-        bottom_margin = 19 * mm
         output_path = documents_dir / f'{filename_stem}.pdf'
         suffix = 2
         while output_path.exists():
@@ -1463,15 +1390,14 @@ def save_cv_pdf(cv_data, cv_sections):
             story.append(Paragraph(escape(heading), heading_style))
             for item in items:
                 flowables = make_entry_flowables(item)
-                if flowables:
-                    story.append(KeepTogether(flowables))
+                story.extend(flowables)
 
         def draw_page_footer(canvas, current_document):
             canvas.saveState()
             canvas.setFont('Helvetica', 8)
             canvas.setFillColor(colors.HexColor('#657586'))
             canvas.drawRightString(
-                page_width - right_margin,
+                A4[0] - right_margin,
                 8.5 * mm,
                 f'Page {current_document.page}',
             )
@@ -1512,6 +1438,37 @@ def collect_cv_skills(skill_type):
     return [value.strip() for value in values.split(',') if value.strip()]
 
 
+def separate_cv_skills(technical_skills, soft_skills):
+    technical = []
+    technical_names = set()
+    for skill in technical_skills:
+        normalized = normalize_skill(skill)
+        if normalized and normalized not in technical_names:
+            technical.append(skill.strip())
+            technical_names.add(normalized)
+
+    has_python = any(
+        'python' in skill_name.split()
+        for skill_name in technical_names
+    )
+    soft = []
+    soft_names = set()
+    for skill in soft_skills:
+        value = skill.strip()
+        normalized = normalize_skill(value)
+        if not normalized or normalized in technical_names or normalized in soft_names:
+            continue
+        if 'python' in normalized.split():
+            if not has_python:
+                technical.append(value)
+                technical_names.add(normalized)
+                has_python = True
+        else:
+            soft.append(value)
+            soft_names.add(normalized)
+    return technical, soft
+
+
 if cv_choice == '1':
     print('\n----- PERSONAL INFORMATION -----')
     full_name = input('Enter your full name: ').strip()
@@ -1537,6 +1494,7 @@ if cv_choice == '1':
             'Enter your objective (optional; press Enter to use your profile '
             'career goal): '
         ).strip() or career_goal.strip()
+        career_objective = polish_user_text(career_objective)
 
     cv_data = {
         'personal_details': {
@@ -1635,8 +1593,10 @@ if cv_choice == '1':
     for entry in cv_data['presentations']:
         entry['details'] = [entry['details']] if entry['details'] else []
 
-    cv_data['skills'] = collect_cv_skills('Technical skills')
-    cv_data['soft_skills'] = collect_cv_skills('Soft skills')
+    cv_data['skills'], cv_data['soft_skills'] = separate_cv_skills(
+        collect_cv_skills('Technical skills'),
+        collect_cv_skills('Soft skills'),
+    )
 
     cv_data['certifications_and_training'] = collect_cv_entries(
         'Certifications and training',
@@ -1709,22 +1669,22 @@ if cv_choice == '1':
         })
 
     cv_sections = [
-        ('PROFESSIONAL PROFILE SUMMARY', [cv_data['professional_summary']]
+        ('Professional Summary', [cv_data['professional_summary']]
          if cv_data['professional_summary'] else []),
-        ('CAREER OBJECTIVE', [cv_data['career_objective']]
+        ('Career Objective', [cv_data['career_objective']]
          if cv_data['career_objective'] else []),
-        ('EDUCATION', education_details),
-        ('WORK EXPERIENCE', cv_data['work_experience']),
-        ('PROJECTS', cv_data['projects_and_achievements']),
-        ('LEADERSHIP AND VOLUNTEERING', cv_data['leadership_and_volunteering']),
-        ('PRESENTATIONS', cv_data['presentations']),
-        ('TECHNICAL SKILLS', [', '.join(cv_data['skills'])]
+        ('Education', education_details),
+        ('Work Experience', cv_data['work_experience']),
+        ('Projects', cv_data['projects_and_achievements']),
+        ('Volunteering', cv_data['leadership_and_volunteering']),
+        ('Presentations', cv_data['presentations']),
+        ('Technical Skills', [', '.join(cv_data['skills'])]
          if cv_data['skills'] else []),
-        ('SOFT SKILLS', [', '.join(cv_data['soft_skills'])]
+        ('Soft Skills', [', '.join(cv_data['soft_skills'])]
          if cv_data['soft_skills'] else []),
-        ('CERTIFICATIONS AND TRAINING', cv_data['certifications_and_training']),
-        ('AWARDS AND HONOURS', cv_data['awards_and_honours']),
-        ('REFERENCES', cv_data['references']),
+        ('Training and Certifications', cv_data['certifications_and_training']),
+        ('Awards and Honours', cv_data['awards_and_honours']),
+        ('References', cv_data['references']),
     ]
 
     print('\n----- CV PREVIEW -----')
@@ -1763,9 +1723,21 @@ if cv_choice == '1':
 
     save_cv_pdf(cv_data, cv_sections)
 elif cv_choice == '2':
-    print(
-        'Existing CV review is not implemented yet. No existing CV has '
-        'been provided or reviewed.'
-    )
+    from cv_review import CVReviewError, review_cv_file
+
+    while True:
+        existing_cv_path = input(
+            'Enter the path to your existing CV (PDF or DOCX), or press Enter to cancel: '
+        ).strip().strip('"')
+        if not existing_cv_path:
+            print('CV review cancelled.')
+            break
+        try:
+            print(review_cv_file(existing_cv_path))
+            break
+        except CVReviewError as error:
+            print(f'Could not review this CV: {error}')
+            if ask_yes_no('Would you like to try another file? (yes/no): ') == 'no':
+                break
 else:
     print('Invalid choice. Please choose 1 or 2.')
