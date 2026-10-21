@@ -4,8 +4,9 @@ from unittest.mock import Mock, patch
 
 import requests
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
-from backend.main import search_jobs
+from backend.main import app, search_jobs
 
 
 class JoobleSearchTests(unittest.TestCase):
@@ -14,6 +15,7 @@ class JoobleSearchTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {"JOOBLE_API_KEY": self.api_key})
         self.environment.start()
         self.addCleanup(self.environment.stop)
+        self.client = TestClient(app)
 
     @staticmethod
     def response(status_code: int, data: object = None) -> Mock:
@@ -145,6 +147,92 @@ class JoobleSearchTests(unittest.TestCase):
             result = search_jobs("Data Analyst", "Lagos", "Nigeria", "Remote")
 
         self.assertEqual([job["title"] for job in result["jobs"]], ["Remote Data Analyst"])
+
+    def test_health_endpoint_returns_ok(self) -> None:
+        response = self.client.get("/health")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_home_endpoint_serves_the_search_page(self) -> None:
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("JobPylot", response.text)
+
+    def test_jobs_endpoint_validates_query_parameters(self) -> None:
+        for params in (
+            {},
+            {"title": " "},
+            {"title": "Backend Engineer", "arrangement": "Flexible"},
+            {"title": "x" * 101},
+        ):
+            with self.subTest(params=params):
+                response = self.client.get("/jobs", params=params)
+
+                self.assertEqual(response.status_code, 422)
+
+    def test_jobs_endpoint_returns_normalized_search_results(self) -> None:
+        listing = {
+            "title": "Backend Engineer",
+            "company": "Example Company",
+            "location": "Lagos, Nigeria",
+            "snippet": "Build backend services.",
+            "updated": "2026-10-20",
+            "link": "https://jobs.example/listing",
+        }
+
+        with patch(
+            "backend.main.requests.post",
+            return_value=self.response(200, {"totalCount": 1, "jobs": [listing]}),
+        ) as post:
+            response = self.client.get(
+                "/jobs",
+                params={
+                    "title": " Backend Engineer ",
+                    "city": " Lagos ",
+                    "country": " Nigeria ",
+                    "arrangement": "Any",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {
+                "query": "Backend Engineer",
+                "city": "Lagos",
+                "country": "Nigeria",
+                "arrangement": "Any",
+                "source": "Jooble",
+                "jobs": [
+                    {
+                        "title": "Backend Engineer",
+                        "company": "Example Company",
+                        "location": "Lagos, Nigeria",
+                        "description": "Build backend services.",
+                        "posted_at": "2026-10-20",
+                        "url": "https://jobs.example/listing",
+                        "source": "Jooble",
+                    }
+                ],
+                "total_count": 1,
+            },
+        )
+        self.assertEqual(
+            post.call_args.kwargs["json"],
+            {"keywords": "Backend Engineer", "location": "Lagos, Nigeria"},
+        )
+
+    def test_jobs_endpoint_reports_missing_api_key_as_configuration_error(self) -> None:
+        with patch.dict(os.environ, {"JOOBLE_API_KEY": ""}):
+            response = self.client.get(
+                "/jobs",
+                params={"title": "Data Analyst", "country": "Nigeria"},
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("JOOBLE_API_KEY", response.json()["detail"])
 
 
 if __name__ == "__main__":
