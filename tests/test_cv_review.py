@@ -128,10 +128,16 @@ class CVDocumentExtractionTests(unittest.TestCase):
             self.assertIn(heading, report)
         self.assertTrue(feedback["good"])
         self.assertTrue(feedback["improvements"])
+        self.assertFalse(
+            any(
+                "work experience" in item.casefold()
+                for item in feedback["improvements"]
+            )
+        )
         self.assertTrue(
             any(
-                item.startswith("Work experience was not detected.")
-                for item in feedback["improvements"]
+                "not necessarily a problem" in item
+                for item in feedback["next_steps"]
             )
         )
 
@@ -140,15 +146,150 @@ class CVDocumentExtractionTests(unittest.TestCase):
             "Work Experience\nI was responsible of filing documents."
         )
 
-        self.assertTrue(
-            any("'responsible of' to 'responsible for'" in item
-                for item in feedback["corrections"])
+        wording_finding = next(
+            item
+            for item in feedback["corrections"]
+            if item["excerpt"] == "I was responsible of filing documents."
         )
-        self.assertTrue(
-            any("first-person wording" in item for item in feedback["corrections"])
+        self.assertEqual(wording_finding["section"], "Work Experience")
+        self.assertIn("responsible of", wording_finding["excerpt"])
+        self.assertIn("responsible for", wording_finding["reason"])
+        self.assertEqual(
+            wording_finding["suggestion"],
+            "I was responsible for filing documents.",
         )
         self.assertTrue(
             any("verify" in item.casefold() or "accurate" in item.casefold()
+                for item in feedback["next_steps"])
+        )
+
+    def test_objective_finding_quotes_and_rewrites_sample_text(self) -> None:
+        objective = (
+            "To strengthen my technical and analytical skills, gain practical experience, "
+            "and continue learning so I can become a competent Data Analyst."
+        )
+        feedback = review_cv_text(
+            "Professional Summary\n"
+            "Currently developing Python skills and building practical projects. "
+            "Eager to gain practical experience.\n"
+            "Career Objective\n"
+            f"{objective}\n"
+            "Education\nBachelor of Engineering 2024-2029"
+        )
+
+        finding = next(
+            item
+            for item in feedback["corrections"]
+            if item["section"] == "Career Objective"
+        )
+        self.assertEqual(finding["excerpt"], objective)
+        self.assertIn("repeats", finding["reason"])
+        self.assertEqual(
+            finding["suggestion"],
+            "To strengthen technical and analytical skills, gain practical experience, "
+            "and continue learning toward a Data Analyst role.",
+        )
+        self.assertNotIn("experienced", finding["suggestion"].casefold())
+
+    def test_lowercase_volunteering_bullet_gets_fact_preserving_rewrite(self) -> None:
+        feedback = review_cv_text(
+            "Volunteering\n"
+            "STEM Programme Facilitator\n"
+            "- participated as a panelist\n"
+            "- managed student sign-in and sign-out."
+        )
+
+        finding = next(
+            item
+            for item in feedback["corrections"]
+            if item["excerpt"] == "- participated as a panelist"
+        )
+        self.assertEqual(finding["section"], "Volunteering")
+        self.assertIn("capital letter", finding["reason"])
+        self.assertEqual(finding["suggestion"], "- Participated as a panelist")
+
+    def test_skill_training_award_and_reference_findings_are_specific(self) -> None:
+        feedback = review_cv_text(
+            "Education\nBachelor of Engineering 2024-2029\n"
+            "Technical Skills\nPython, FastAPI\n"
+            "Soft Skills\nPython, Communication\n"
+            "Training and Certifications\nSWEP Training Programme\n"
+            "Awards and Honours\nBest Student Award\n"
+            "References\nDr Example"
+        )
+
+        findings = feedback["corrections"]
+        self.assertTrue(
+            any(item["section"] == "Soft Skills" and "Python" in item["excerpt"]
+                and "Technical Skills" in item["suggestion"] for item in findings)
+        )
+        self.assertTrue(
+            any(item["section"] == "Training and Certifications"
+                and "No date" in item["reason"] for item in findings)
+        )
+        self.assertTrue(
+            any(item["section"] == "Awards and Honours"
+                and "No date" in item["reason"] for item in findings)
+        )
+        self.assertTrue(
+            any(item["section"] == "References"
+                and "No email address" in item["reason"] for item in findings)
+        )
+
+    def test_project_title_without_description_is_flagged_with_excerpt(self) -> None:
+        feedback = review_cv_text("Projects\nJobPylot AI")
+
+        finding = next(
+            item for item in feedback["corrections"]
+            if item["section"] == "Projects and Achievements"
+        )
+        self.assertEqual(finding["excerpt"], "JobPylot AI")
+        self.assertIn("no description", finding["reason"])
+        self.assertIn("actual contribution", finding["suggestion"])
+
+    def test_spacing_warning_requires_two_spaces_between_words(self) -> None:
+        aligned_pdf_text = (
+            "Education\nBachelor of Engineering                    2024-2029\n"
+            "Volunteering\n-  managed student sign-in."
+        )
+        feedback = review_cv_text(aligned_pdf_text)
+
+        self.assertFalse(
+            any(item["section"] == "Document formatting"
+                for item in feedback["corrections"])
+        )
+
+        genuine_double_space = review_cv_text(
+            "Technical Skills\nPython  FastAPI"
+        )
+        spacing_finding = next(
+            item for item in genuine_double_space["corrections"]
+            if item["section"] == "Document formatting"
+        )
+        self.assertEqual(spacing_finding["excerpt"], "Python  FastAPI")
+        self.assertEqual(spacing_finding["suggestion"], "Python FastAPI")
+
+    def test_review_of_well_formed_sections_does_not_create_generic_findings(self) -> None:
+        feedback = review_cv_text(
+            "Professional Summary\nData analyst developing Python projects.\n"
+            "Career Objective\nBuild practical data analysis experience.\n"
+            "Education\nBEng Mechatronics 2024-2029\n"
+            "Projects\nBuilt a career assistant using Python.\n"
+            "Volunteering\n- Facilitated STEM activities.\n"
+            "Technical Skills\nPython, FastAPI\n"
+            "Soft Skills\nCommunication, teamwork\n"
+            "Training and Certifications\nSWEP Programme 2025\n"
+            "Awards and Honours\nBest Student Award 2024\n"
+            "References\nDr Example example@example.com"
+        )
+
+        self.assertEqual(feedback["corrections"], [])
+        self.assertFalse(
+            any("work experience" in item.casefold()
+                for item in feedback["improvements"])
+        )
+        self.assertTrue(
+            any("not necessarily a problem" in item
                 for item in feedback["next_steps"])
         )
 

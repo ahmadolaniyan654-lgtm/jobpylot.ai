@@ -45,19 +45,44 @@ SECTION_ALIASES = {
     "References": {"references", "referees"},
 }
 
-COMMON_WORDING = {
-    "responsible of": "responsible for",
-    "discuss about": "discuss",
-    "informations": "information",
-    "equipments": "equipment",
-    "i am agree": "I agree",
-    "hard working": "hard-working",
-    "acheivement": "achievement",
-    "communcation": "communication",
-    "experiance": "experience",
-    "managment": "management",
-    "recieve": "receive",
-    "teh": "the",
+WORDING_REWRITES = {
+    "responsible of": (
+        "Use 'responsible for' with the activity that follows.",
+        "responsible for",
+    ),
+    "discuss about": (
+        "The verb 'discuss' does not need 'about'.",
+        "discuss",
+    ),
+    "informations": (
+        "'Information' is normally uncountable in this context.",
+        "information",
+    ),
+    "equipments": (
+        "'Equipment' is normally uncountable in this context.",
+        "equipment",
+    ),
+    "i am agree": (
+        "This phrasing is ungrammatical; 'I agree' keeps the same meaning.",
+        "I agree",
+    ),
+    "hard working": (
+        "Use the standard compound adjective spelling.",
+        "hard-working",
+    ),
+    "acheivement": ("This appears to be a spelling error.", "achievement"),
+    "communcation": ("This appears to be a spelling error.", "communication"),
+    "experiance": ("This appears to be a spelling error.", "experience"),
+    "managment": ("This appears to be a spelling error.", "management"),
+    "recieve": ("This appears to be a spelling error.", "receive"),
+    "teh": ("This appears to be a spelling error.", "the"),
+}
+
+SECTION_DATE_PATTERNS = {
+    "Education": r"\b(?:19|20)\d{2}\b",
+    "Work Experience": r"\b(?:19|20)\d{2}\b|\bpresent\b",
+    "Training and Certifications": r"\b(?:19|20)\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\b",
+    "Awards and Honours": r"\b(?:19|20)\d{2}\b",
 }
 
 
@@ -173,13 +198,206 @@ def _collect_sections(text: str) -> dict[str, list[str]]:
     return sections
 
 
-def review_cv_text(text: str) -> dict[str, list[str]]:
+def _make_finding(
+    section: str,
+    excerpt: str,
+    reason: str,
+    suggestion: str,
+) -> dict[str, str]:
+    return {
+        "section": section,
+        "excerpt": _short_excerpt(excerpt, normalise_spacing=False),
+        "reason": reason,
+        "suggestion": suggestion.strip(),
+    }
+
+
+def _short_excerpt(
+    text: str,
+    limit: int = 180,
+    *,
+    normalise_spacing: bool = True,
+) -> str:
+    if normalise_spacing:
+        excerpt = re.sub(r"\s+", " ", text).strip()
+    else:
+        excerpt = re.sub(r"[\x00-\x1f\x7f\ufffd]", "", text).strip()
+    if len(excerpt) > limit:
+        return excerpt[: limit - 1].rstrip() + "…"
+    return excerpt
+
+
+def _objective_rewrite(text: str) -> str | None:
+    """Tighten a common goal sentence without changing its stated intent."""
+    match = re.fullmatch(
+        r"(?P<opening>To .+?)\s+so I can become a competent "
+        r"(?P<role>[^.!?]+)(?P<ending>[.!?]?)",
+        text.strip(),
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    opening = re.sub(r"\bmy\s+", "", match.group("opening"), flags=re.IGNORECASE)
+    role = match.group("role").strip()
+    return f"{opening} toward a {role} role{match.group('ending') or '.'}"
+
+
+def _wording_findings(sections: dict[str, list[str]]) -> list[dict[str, str]]:
+    findings = []
+    for section, lines in sections.items():
+        for line in lines:
+            for phrase, (reason, replacement) in WORDING_REWRITES.items():
+                match = re.search(re.escape(phrase), line, re.IGNORECASE)
+                if not match:
+                    continue
+                suggestion = re.sub(
+                    re.escape(phrase),
+                    replacement,
+                    line,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
+                findings.append(
+                    _make_finding(
+                        section,
+                        line,
+                        reason,
+                        suggestion,
+                    )
+                )
+
+            bullet = re.match(r"^(\s*[-•]\s+)([a-z])", line)
+            if bullet:
+                suggestion = (
+                    line[: bullet.start(2)]
+                    + bullet.group(2).upper()
+                    + line[bullet.end(2) :]
+                )
+                findings.append(
+                    _make_finding(
+                        section,
+                        line,
+                        "Starting each duty bullet with a capital letter makes the list consistent.",
+                        suggestion,
+                    )
+                )
+
+    objective = " ".join(sections.get("Career Objective", []))
+    summary = " ".join(sections.get("Professional Summary", []))
+    objective_rewrite = _objective_rewrite(objective)
+    if objective_rewrite:
+        shared_themes = (
+            "practical experience" in summary.casefold()
+            and "skill" in summary.casefold()
+            and "practical experience" in objective.casefold()
+            and "skill" in objective.casefold()
+        )
+        if shared_themes or re.search(r"\bmy\b|\bI\b", objective):
+            reason = (
+                "This objective repeats skill-development and practical-experience themes "
+                "already in the summary and uses first-person wording."
+                if shared_themes
+                else "Removing first-person wording makes this objective more direct."
+            )
+            findings.append(
+                _make_finding(
+                    "Career Objective",
+                    objective,
+                    reason,
+                    objective_rewrite,
+                )
+            )
+    return findings
+
+
+def _section_findings(
+    sections: dict[str, list[str]],
+) -> list[dict[str, str]]:
+    findings = []
+    for section, date_pattern in SECTION_DATE_PATTERNS.items():
+        lines = sections.get(section, [])
+        if lines and not re.search(date_pattern, " ".join(lines), re.IGNORECASE):
+            findings.append(
+                _make_finding(
+                    section,
+                    lines[0],
+                    f"No date was detected in the {section.lower()} section.",
+                    "Add the date or validity period if it is known; otherwise, leave it out.",
+                )
+            )
+
+    project_lines = sections.get("Projects and Achievements", [])
+    project_text = " ".join(project_lines).strip()
+    if (
+        project_text
+        and len(project_text.split()) <= 5
+        and not re.search(r"[.!?]", project_text)
+    ):
+        findings.append(
+            _make_finding(
+                "Projects and Achievements",
+                project_text,
+                "Only a project or achievement title was detected, with no description beneath it.",
+                "Add a short description of what was done, using only the actual contribution and outcome.",
+            )
+        )
+
+    technical = " ".join(sections.get("Technical Skills", []))
+    soft = " ".join(sections.get("Soft Skills", []))
+    if re.search(r"\bpython\b", soft, re.IGNORECASE):
+        findings.append(
+            _make_finding(
+                "Soft Skills",
+                _short_excerpt(soft),
+                "Python is a programming language, so listing it as a soft skill may make the skills categories unclear.",
+                "List Python under Technical Skills and keep Soft Skills for interpersonal abilities, if that matches the applicant's intent.",
+            )
+        )
+
+    technical_items = {
+        item.strip().casefold()
+        for item in re.split(r"[,;|\n]", technical)
+        if item.strip()
+    }
+    duplicate_soft_items = [
+        item.strip()
+        for item in re.split(r"[,;|\n]", soft)
+        if item.strip() and item.strip().casefold() in technical_items
+    ]
+    if duplicate_soft_items and not re.search(r"\bpython\b", soft, re.IGNORECASE):
+        findings.append(
+            _make_finding(
+                "Soft Skills",
+                ", ".join(duplicate_soft_items),
+                "These entries also appear under Technical Skills, so they may be redundant.",
+                "Keep each skill in the section that best describes it and remove duplicate listings.",
+            )
+        )
+
+    references = " ".join(sections.get("References", []))
+    if sections.get("References") and not re.search(
+        r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b|"
+        r"\+?\d[\d ()-]{6,}\d",
+        references,
+        re.IGNORECASE,
+    ):
+        findings.append(
+            _make_finding(
+                "References",
+                _short_excerpt(references) or "References",
+                "No email address or phone number was detected in the reference details.",
+                "Add a contact method only after confirming it is accurate and the referee has agreed to be listed.",
+            )
+        )
+    return findings
+
+
+def review_cv_text(text: str) -> dict[str, list[str] | list[dict[str, str]]]:
     """Return evidence-based, local CV feedback without adding personal claims."""
     clean_text = text.strip()
     lines = [line.strip() for line in clean_text.splitlines() if line.strip()]
     sections = _collect_sections(clean_text)
     section_names = set(sections)
-    lower_text = clean_text.casefold()
     good = []
     improvements = []
     corrections = []
@@ -189,7 +407,14 @@ def review_cv_text(text: str) -> dict[str, list[str]]:
         return {
             "good": [],
             "improvements": ["No CV text was available to review."],
-            "corrections": ["Add readable CV text before requesting a review."],
+            "corrections": [
+                _make_finding(
+                    "Document",
+                    "No CV text",
+                    "There is no text to review.",
+                    "Provide readable CV text before requesting a review.",
+                )
+            ],
             "next_steps": ["Provide a non-empty PDF or DOCX containing selectable text."],
         }
 
@@ -247,21 +472,11 @@ def review_cv_text(text: str) -> dict[str, list[str]]:
 
     for section, label in (
         ("Education", "Education"),
-        ("Work Experience", "Work experience"),
         ("Projects and Achievements", "Projects or achievements"),
         ("Technical Skills", "Technical skills"),
         ("Soft Skills", "Soft skills"),
     ):
-        if section not in section_names and not re.search(
-            {
-                "Education": r"\b(education|degree|diploma|university|college)\b",
-                "Work Experience": r"\b(work experience|employment|employer|job title)\b",
-                "Projects and Achievements": r"\b(projects?|achievements?)\b",
-                "Technical Skills": r"\b(technical skills|programming|software|tools)\b",
-                "Soft Skills": r"\b(soft skills|communication|leadership|teamwork)\b",
-            }[section],
-            lower_text,
-        ):
+        if section not in section_names:
             improvements.append(
                 f"{label} was not detected. Include this section only when the user has relevant information to add."
             )
@@ -284,6 +499,10 @@ def review_cv_text(text: str) -> dict[str, list[str]]:
                 improvements.append(
                     "No work dates were detected; add dates if known so the timeline is clear."
                 )
+    else:
+        next_steps.append(
+            "No work-experience section was found. This is not necessarily a problem; add relevant experience only if available."
+        )
 
     if "Projects and Achievements" in section_names and sections["Projects and Achievements"]:
         good.append("Projects or achievements are included.")
@@ -292,26 +511,22 @@ def review_cv_text(text: str) -> dict[str, list[str]]:
     if "Soft Skills" in section_names and sections["Soft Skills"]:
         good.append("A soft-skills section is included.")
 
-    repeated_spaces = re.search(r"[ \t]{2,}", clean_text)
+    repeated_spaces = re.search(r"(?<=\w) {2}(?=\w)", clean_text)
     if repeated_spaces:
-        corrections.append(
-            "Replace repeated spaces with single spaces; for example, "
-            f"{repeated_spaces.group(0)!r} can be reduced to one space."
+        line = next(
+            line for line in clean_text.splitlines()
+            if repeated_spaces.group(0) in line
         )
-    for phrase, replacement in COMMON_WORDING.items():
-        match = re.search(re.escape(phrase), clean_text, re.IGNORECASE)
-        if match:
-            corrections.append(
-                f"Change {match.group(0)!r} to {replacement!r} if that matches the intended meaning."
+        corrections.append(
+            _make_finding(
+                "Document formatting",
+                _short_excerpt(line, normalise_spacing=False),
+                "Two spaces appear between words in this extracted line, which can look inconsistent.",
+                re.sub(r"(?<=\w) {2}(?=\w)", " ", line),
             )
-    if re.search(r"\b(i|my|we|our)\b", clean_text, re.IGNORECASE):
-        corrections.append(
-            "Check first-person wording and use concise CV-style phrases where appropriate, without changing the facts."
         )
-    if not corrections:
-        corrections.append(
-            "No obvious wording pattern was flagged by the basic local checks. Proofread names, dates, spelling, and punctuation manually."
-        )
+    corrections.extend(_wording_findings(sections))
+    corrections.extend(_section_findings(sections))
 
     if not any(
         section in section_names
@@ -331,6 +546,10 @@ def review_cv_text(text: str) -> dict[str, list[str]]:
     if len(clean_text.split()) < 80:
         next_steps.append(
             "The extracted CV is brief. Add relevant details only if they are true and useful; a short CV is better than invented content."
+        )
+    if not corrections:
+        next_steps.append(
+            "No specific wording issue was detected by these local checks; proofread names, dates, spelling, and punctuation manually."
         )
 
     return {
@@ -359,8 +578,18 @@ def format_cv_review(file_path: str | Path, text: str) -> str:
         ("Recommended next steps", "next_steps"),
     ):
         report.append(f"\n{heading}:")
-        report.extend(f"- {item}" for item in feedback[key])
-        if not feedback[key]:
+        items = feedback[key]
+        if key == "corrections":
+            for finding in items:
+                report.extend([
+                    f"- Section: {finding['section']}",
+                    f"  Excerpt: “{finding['excerpt']}”",
+                    f"  Why: {finding['reason']}",
+                    f"  Suggested rewrite: {finding['suggestion']}",
+                ])
+        else:
+            report.extend(f"- {item}" for item in items)
+        if not items:
             report.append("- No specific items were identified.")
     return "\n".join(report)
 
