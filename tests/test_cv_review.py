@@ -293,6 +293,45 @@ class CVDocumentExtractionTests(unittest.TestCase):
                 for item in feedback["next_steps"])
         )
 
+    def test_report_summarises_detected_corrections_as_improvements(self) -> None:
+        text = (
+            "jordan@example.com\n"
+            "Professional Summary\n"
+            "Developing analytical skills and practical experience.\n"
+            "Career Objective\n"
+            "To strengthen my technical and analytical skills, gain practical experience, "
+            "and continue learning so I can become a competent Data Analyst.\n"
+            "Volunteering\n"
+            "- participated as a panelist\n"
+            "- provided videography support\n"
+            "- managed student sign-in and sign-out.\n"
+            "Education\nBachelor of Engineering 2024-2029\n"
+            "Projects\nBuilt a local career assistant for CV creation.\n"
+            "Technical Skills\nPython, FastAPI\n"
+            "Soft Skills\nCommunication, teamwork\n"
+            "Training and Certifications\n"
+            "SWEP Training Programme"
+        )
+
+        report = format_cv_review("candidate.pdf", text)
+        improvements = report.split(
+            "What needs improvement:\n", 1
+        )[1].split("\nSpecific suggested corrections:", 1)[0]
+        corrections = report.split("Specific suggested corrections:\n", 1)[1]
+
+        self.assertNotIn("No specific items were identified.", improvements)
+        self.assertIn("Volunteering: 3 bullet(s) need consistent capitalisation.", improvements)
+        self.assertIn("Career Objective:", improvements)
+        self.assertIn("Training and Certifications: No date was detected", improvements)
+        self.assertIn("Suggested rewrite: - Participated as a panelist", corrections)
+        self.assertIn("Suggested rewrite: - Provided videography support", corrections)
+        self.assertIn("Suggested rewrite: - Managed student sign-in and sign-out.", corrections)
+        self.assertIn(
+            "Suggested rewrite: To strengthen technical and analytical skills",
+            corrections,
+        )
+        self.assertNotIn("Suggested rewrite:", improvements)
+
     def test_review_file_works_end_to_end_for_docx(self) -> None:
         path = self.make_docx(
             "candidate.docx",

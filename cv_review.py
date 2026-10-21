@@ -560,6 +560,35 @@ def review_cv_text(text: str) -> dict[str, list[str] | list[dict[str, str]]]:
     }
 
 
+def _summarise_findings(findings: list[dict[str, str]]) -> list[str]:
+    """Summarise detected correction themes without repeating their rewrites."""
+    grouped: dict[str, list[dict[str, str]]] = {}
+    for finding in findings:
+        grouped.setdefault(finding["section"], []).append(finding)
+
+    summaries = []
+    for section, section_findings in grouped.items():
+        capitalisation_count = sum(
+            finding["reason"].startswith("Starting each duty bullet")
+            for finding in section_findings
+        )
+        if capitalisation_count:
+            summaries.append(
+                f"{section}: {capitalisation_count} bullet(s) need consistent "
+                "capitalisation."
+            )
+
+        other_reasons = dict.fromkeys(
+            finding["reason"]
+            for finding in section_findings
+            if not finding["reason"].startswith("Starting each duty bullet")
+        )
+        summaries.extend(
+            f"{section}: {reason}" for reason in other_reasons
+        )
+    return summaries
+
+
 def format_cv_review(file_path: str | Path, text: str) -> str:
     """Format a review into a readable terminal report."""
     feedback = review_cv_text(text)
@@ -590,7 +619,13 @@ def format_cv_review(file_path: str | Path, text: str) -> str:
         else:
             report.extend(f"- {item}" for item in items)
         if not items:
-            report.append("- No specific items were identified.")
+            if key == "improvements" and feedback["corrections"]:
+                report.extend(
+                    f"- {item}"
+                    for item in _summarise_findings(feedback["corrections"])
+                )
+            else:
+                report.append("- No specific items were identified.")
     return "\n".join(report)
 
 
