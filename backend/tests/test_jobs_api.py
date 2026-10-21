@@ -6,7 +6,7 @@ import requests
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from backend.main import app, search_jobs
+from backend.main import app, job_search_error_detail, search_jobs
 
 
 class JoobleSearchTests(unittest.TestCase):
@@ -107,6 +107,31 @@ class JoobleSearchTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.status_code, 503)
         self.assertIn("try again", raised.exception.detail)
+
+    def test_job_search_error_detail_explains_503_response(self) -> None:
+        responses = (
+            self.response(
+                503,
+                {"detail": "Job search is not configured. Add a valid JOOBLE_API_KEY."},
+            ),
+            self.response(
+                503,
+                {"detail": "Jooble's search limit has been reached. Please try again."},
+            ),
+        )
+
+        self.assertIn("JOOBLE_API_KEY", job_search_error_detail(responses[0]))
+        self.assertIn("search limit", job_search_error_detail(responses[1]))
+
+    def test_job_search_error_detail_ignores_unreadable_or_unexpected_response(self) -> None:
+        unreadable = self.response(503)
+        unreadable.json.side_effect = ValueError("invalid JSON")
+        unexpected = self.response(503, {"detail": ["not", "text"]})
+        missing = self.response(503, {"error": "unavailable"})
+
+        self.assertIsNone(job_search_error_detail(unreadable))
+        self.assertIsNone(job_search_error_detail(unexpected))
+        self.assertIsNone(job_search_error_detail(missing))
 
     def test_network_error_is_sanitized(self) -> None:
         with patch(

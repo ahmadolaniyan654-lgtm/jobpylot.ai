@@ -31,6 +31,17 @@ def _optional_text(job: Mapping[str, object], field: str) -> str | None:
     return value.strip() if isinstance(value, str) and value.strip() else None
 
 
+def job_search_error_detail(response: requests.Response) -> str | None:
+    try:
+        data = response.json()
+    except ValueError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    detail = data.get("detail")
+    return detail.strip() if isinstance(detail, str) and detail.strip() else None
+
+
 def _normalize_job(job: Mapping[str, object]) -> dict[str, str]:
     fields = {
         "title": "title",

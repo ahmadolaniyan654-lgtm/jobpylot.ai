@@ -957,10 +957,18 @@ try:
     if not isinstance(data, dict) or not isinstance(data.get('jobs'), list):
         raise ValueError('The JobPylot backend returned an unexpected response.')
 except (requests.RequestException, RuntimeError, ValueError) as error:
+    error_message = str(error)
+    if isinstance(error, requests.HTTPError) and error.response is not None:
+        from backend.main import job_search_error_detail
+
+        error_message = job_search_error_detail(error.response) or (
+            "The local job search service returned HTTP "
+            f"{error.response.status_code} without an explanation."
+        )
     print(
         '\nSorry, the job search could not be completed: '
-        f'{error}\nCheck your internet connection and make sure the project '
-        'dependencies are installed if the backend failed to start.'
+        f'{error_message}\nCheck your internet connection if Jooble could not be '
+        'reached, and install project dependencies if the backend failed to start.'
     )
 else:
     matching_jobs = data['jobs']
@@ -1098,32 +1106,118 @@ def professional_institution_name(value):
 
 
 def generate_professional_summary(cv_data):
-    target_role = cv_data.get('target_role', '').strip()
-    experience = cv_data.get('work_experience', [])
+    target_roles = cv_data.get('target_roles') or []
+    if isinstance(target_roles, str):
+        target_roles = [target_roles]
+    if not target_roles and cv_data.get('target_role'):
+        target_roles = [cv_data['target_role']]
+    target_roles = [
+        professional_title(role.strip())
+        for role in target_roles
+        if isinstance(role, str) and role.strip()
+    ]
 
     sentences = []
-    if experience:
-        experience_descriptions = []
-        for entry in experience:
-            role = entry.get('job_title', '').strip()
-            company = entry.get('company_name', '').strip()
-            if role and company:
-                experience_descriptions.append(f'{role} at {company}')
-            elif role or company:
-                experience_descriptions.append(role or company)
-        if experience_descriptions:
-            if len(experience_descriptions) == 1:
-                sentences.append(f'Experience as {experience_descriptions[0]}.')
-            else:
-                sentences.append(
-                    'Experience includes '
-                    + '; '.join(experience_descriptions)
-                    + '.'
-                )
-    elif target_role:
-        sentences.append(f'Career focus: {professional_title(target_role)}.')
+    if target_roles:
+        if len(target_roles) == 1:
+            sentences.append(f'Interested in a {target_roles[0]} role.')
+        else:
+            sentences.append(
+                'Interested in '
+                + ' and '.join(target_roles)
+                + ' roles.'
+            )
 
-    return ' '.join(sentences)
+    education_entries = cv_data.get('education_entries') or []
+    if not education_entries and cv_data.get('education'):
+        education_entries = [cv_data['education']]
+    education_details = []
+    for entry in education_entries:
+        qualification = entry.get('qualification', '').strip()
+        course = entry.get('course', '').strip()
+        institution = entry.get('institution', '').strip()
+        study = qualification
+        if course and normalize_skill(course) not in normalize_skill(qualification):
+            study = f'{study} in {course}'.strip()
+        if study and institution:
+            education_details.append(f'{study} at {institution}')
+        elif study or institution:
+            education_details.append(study or institution)
+    if education_details:
+        sentences.append('Education includes ' + '; '.join(education_details) + '.')
+
+    skills = []
+    seen_skills = set()
+    for skill in cv_data.get('skills', []):
+        normalized = normalize_skill(skill)
+        if normalized and normalized not in seen_skills:
+            skills.append(skill.strip())
+            seen_skills.add(normalized)
+    if skills:
+        sentences.append('Technical skills include ' + ', '.join(skills) + '.')
+
+    experience_details = []
+    for entry in cv_data.get('work_experience', []):
+        role = entry.get('job_title', '').strip()
+        company = entry.get('company_name', '').strip()
+        if role and company:
+            experience_details.append(f'{role} at {company}')
+        elif role or company:
+            experience_details.append(role or company)
+    if experience_details:
+        sentences.append('Experience includes ' + '; '.join(experience_details) + '.')
+
+    project_details = []
+    for project in cv_data.get('projects_and_achievements', []):
+        title = project.get('title', '').strip()
+        details = project.get('details', [])
+        if isinstance(details, str):
+            details = [details]
+        description = next(
+            (detail.strip() for detail in details if detail.strip()),
+            '',
+        )
+        technologies = project.get('technologies', '').strip()
+        if description:
+            project_details.append(description)
+        elif title and technologies:
+            project_details.append(f'{title}, using {technologies}')
+        elif title:
+            project_details.append(title)
+    if project_details:
+        sentences.append('Project work includes ' + '; '.join(project_details) + '.')
+
+    return ' '.join(sentences[:5])
+
+
+def parse_cv_targets(value, default_target=''):
+    if value.strip().casefold() in {'general', 'general cv'}:
+        return []
+    raw_targets = value.split(',') if value.strip() else [default_target]
+    targets = []
+    seen = set()
+    for target in raw_targets:
+        target = target.strip()
+        if target and target.casefold() not in seen:
+            targets.append(target)
+            seen.add(target.casefold())
+    return targets
+
+
+def default_career_objective(target_roles, fallback=''):
+    if not target_roles:
+        return fallback.strip()
+    if len(target_roles) == 1:
+        article = 'an' if target_roles[0][:1].lower() in 'aeiou' else 'a'
+        return f'Seeking an opportunity as {article} {target_roles[0]}.'
+    return 'Seeking opportunities in ' + ' and '.join(target_roles) + ' roles.'
+
+
+def capitalise_bullet_start(value):
+    match = re.search(r'[A-Za-z]', value)
+    if not match:
+        return value
+    return value[:match.start()] + value[match.start()].upper() + value[match.start() + 1:]
 
 
 def polish_user_text(value):
@@ -1147,6 +1241,7 @@ def save_cv_pdf(cv_data, cv_sections):
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import (
+            KeepTogether,
             Paragraph,
             SimpleDocTemplate,
             Table,
@@ -1253,7 +1348,16 @@ def save_cv_pdf(cv_data, cv_sections):
         bottom_margin = 19 * mm
         story = []
         display_name = full_name or 'Curriculum Vitae'
-        target_role = cv_data.get('target_role', '').strip()
+        target_roles = cv_data.get('target_roles') or []
+        if isinstance(target_roles, str):
+            target_roles = [target_roles]
+        if not target_roles and cv_data.get('target_role'):
+            target_roles = [cv_data['target_role']]
+        target_role = ', '.join(
+            professional_title(role.strip())
+            for role in target_roles
+            if isinstance(role, str) and role.strip()
+        )
         header_content = [Paragraph(escape(display_name), title_style)]
         if target_role:
             header_content.append(
@@ -1308,6 +1412,7 @@ def save_cv_pdf(cv_data, cv_sections):
                 )
 
             flowables = []
+            entry_header_count = 0
             if title or dates:
                 row = [
                     Paragraph(escape(str(title)), entry_title_style),
@@ -1326,6 +1431,7 @@ def save_cv_pdf(cv_data, cv_sections):
                     ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
                 ]))
                 flowables.append(header)
+                entry_header_count += 1
 
             meta = ' | '.join(
                 str(value).strip()
@@ -1334,6 +1440,7 @@ def save_cv_pdf(cv_data, cv_sections):
             )
             if meta:
                 flowables.append(Paragraph(escape(meta), entry_meta_style))
+                entry_header_count += 1
 
             details = item.get('details') or item.get('responsibilities') or []
             if isinstance(details, str):
@@ -1367,6 +1474,11 @@ def save_cv_pdf(cv_data, cv_sections):
                             entry_meta_style,
                         )
                     )
+            if entry_header_count:
+                return [
+                    KeepTogether(flowables[:entry_header_count]),
+                    *flowables[entry_header_count:],
+                ]
             return flowables
 
         output_path = documents_dir / f'{filename_stem}.pdf'
@@ -1477,6 +1589,14 @@ if cv_choice == '1':
     location = input('Enter your city and country: ').strip()
     linkedin = input('Enter your LinkedIn profile (optional): ').strip()
     portfolio = input('Enter your GitHub or portfolio link (optional): ').strip()
+    target_input = input(
+        'Enter target role(s) for this CV, separated by commas, '
+        'or type "general" for a general CV. Press Enter to use '
+        f'{normalized_job or "your profile role"}: '
+    )
+    target_roles = parse_cv_targets(target_input, normalized_job)
+    target_display = ' and '.join(target_roles) if target_roles else 'General CV'
+    print('CV target:', target_display)
 
     education_entries = collect_cv_entries('Education', [
         ('institution', 'Institution: '),
@@ -1490,11 +1610,15 @@ if cv_choice == '1':
     print('\n----- CAREER OBJECTIVE -----')
     career_objective = ''
     if ask_yes_no('Include a career objective? (yes/no): ') == 'yes':
+        suggested_objective = default_career_objective(
+            target_roles,
+            career_goal,
+        )
+        if suggested_objective:
+            print('Suggested objective:', suggested_objective)
         career_objective = input(
-            'Enter your objective (optional; press Enter to use your profile '
-            'career goal): '
-        ).strip() or career_goal.strip()
-        career_objective = polish_user_text(career_objective)
+            'Enter your objective, or press Enter to use the suggestion above: '
+        ).strip() or suggested_objective
 
     cv_data = {
         'personal_details': {
@@ -1506,7 +1630,8 @@ if cv_choice == '1':
             'portfolio': portfolio,
         },
         'professional_summary': '',
-        'target_role': normalized_job,
+        'target_role': target_roles[0] if len(target_roles) == 1 else '',
+        'target_roles': target_roles,
         'career_goal': career_goal,
         'career_objective': career_objective,
         'education': education_entries[0] if education_entries else {},
@@ -1583,6 +1708,22 @@ if cv_choice == '1':
         entry['details'] = [
             detail.strip() for detail in entry['details'].split(';') if detail.strip()
         ]
+    volunteering_suggestions = [
+        (entry, detail, capitalise_bullet_start(detail))
+        for entry in cv_data['leadership_and_volunteering']
+        for detail in entry['details']
+        if capitalise_bullet_start(detail) != detail
+    ]
+    if volunteering_suggestions:
+        print('\nSuggested volunteering bullet capitalisation:')
+        for _, original, suggestion in volunteering_suggestions:
+            print(f'- {original} -> {suggestion}')
+        if ask_yes_no('Apply these capitalization suggestions? (yes/no): ') == 'yes':
+            for entry, original, suggestion in volunteering_suggestions:
+                entry['details'] = [
+                    suggestion if detail == original else detail
+                    for detail in entry['details']
+                ]
 
     cv_data['presentations'] = collect_cv_entries('Presentations', [
         ('title', 'Presentation title: '),
@@ -1629,7 +1770,13 @@ if cv_choice == '1':
 
     print('\n----- PROFESSIONAL SUMMARY -----')
     professional_summary = generate_professional_summary(cv_data)
-    print(professional_summary)
+    if professional_summary:
+        print(professional_summary)
+    else:
+        print(
+            'There is not enough profile information for an automatic summary. '
+            'You can enter one below or press Enter to omit it.'
+        )
     edited_summary = input(
         'Press Enter to use this summary, or type an edited version: '
     ).strip()
@@ -1689,6 +1836,7 @@ if cv_choice == '1':
 
     print('\n----- CV PREVIEW -----')
     print(personal_details['full_name'] or 'Curriculum Vitae')
+    print('CV target:', target_display)
     if contact_details:
         print(' | '.join(contact_details))
     for heading, items in cv_sections:
@@ -1741,4 +1889,3 @@ elif cv_choice == '2':
                 break
 else:
     print('Invalid choice. Please choose 1 or 2.')
-
