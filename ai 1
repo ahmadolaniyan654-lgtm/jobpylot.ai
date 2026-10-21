@@ -1099,14 +1099,15 @@ def professional_institution_name(value):
 
 
 def generate_professional_summary(cv_data):
-    target_job = professional_title(cv_data['target_role'].strip())
-    work_experience = cv_data['work_experience']
-    education = cv_data['education']
+    target_role = cv_data.get('target_role', '').strip()
+    target_job = professional_title(target_role) if target_role else ''
+    work_experience = cv_data.get('work_experience', [])
+    education = cv_data.get('education', {})
     target_requirements = next(
         (
             required_skills
             for career, required_skills in career_requirements.items()
-            if career_title_matches(cv_data['target_role'], career)
+            if target_role and career_title_matches(target_role, career)
         ),
         [],
     )
@@ -1115,7 +1116,7 @@ def generate_professional_summary(cv_data):
     }
     skills = []
     seen_skills = set()
-    for skill in cv_data['skills']:
+    for skill in cv_data.get('skills', []):
         normalized_skill = normalize_skill(skill)
         if normalized_skill in relevant_skill_names and normalized_skill not in seen_skills:
             skills.append(professional_title(skill.strip()))
@@ -1159,10 +1160,12 @@ def generate_professional_summary(cv_data):
             )
         sentences.append(f'Relevant skills include {skill_list}.')
 
-    qualification = education['qualification'].strip()
-    course = education['course'].strip()
-    institution = professional_institution_name(education['institution'])
-    graduation_year = education['graduation_year'].strip()
+    qualification = education.get('qualification', '').strip()
+    course = education.get('course', '').strip()
+    institution_name = education.get('institution', '')
+    institution = professional_institution_name(institution_name) if institution_name else ''
+    graduation_year = education.get('graduation_year', '').strip()
+    graduation_status = education.get('graduation_status', '').strip()
     education_sentence = ''
 
     if qualification or course or institution or graduation_year:
@@ -1171,8 +1174,17 @@ def generate_professional_summary(cv_data):
         if course_text and course_text.casefold() in qualification_text.casefold():
             course_text = ''
 
-        if qualification_text.casefold().startswith('currently pursuing '):
-            qualification_text = qualification_text[len('Currently Pursuing '):]
+        qualification_is_current = bool(re.match(
+            r'currently\s+(?:pursuing|studying|enrolled)\b',
+            qualification_text,
+            re.IGNORECASE,
+        ))
+        qualification_text = re.sub(
+            r'^currently\s+(?:pursuing|studying|enrolled)\s+(?:in\s+)?',
+            '',
+            qualification_text,
+            flags=re.IGNORECASE,
+        )
 
         if qualification_text:
             study = qualification_text
@@ -1186,13 +1198,20 @@ def generate_professional_summary(cv_data):
         year_match = re.search(r'\b(?:19|20|21)\d{2}\b', graduation_year)
         year = year_match.group(0) if year_match else ''
         current_year = date.today().year
-        if year and int(year) > current_year:
+        status_is_current = bool(re.search(
+            r'\b(?:in progress|currently pursuing|currently studying|enrolled|expected)\b',
+            graduation_status,
+            re.IGNORECASE,
+        ))
+        if (year and int(year) > current_year) or status_is_current or qualification_is_current:
             education_sentence = (
                 f'Currently pursuing {study}' if study else 'Currently studying'
             )
             if institution:
                 education_sentence += f' at {institution}'
-            education_sentence += f', with expected graduation in {year}.'
+            if year and int(year) > current_year:
+                education_sentence += f', with expected graduation in {year}'
+            education_sentence += '.'
         elif study:
             education_sentence = f'Education includes {study}'
             if institution:
@@ -1219,14 +1238,16 @@ def save_cv_pdf(cv_data, cv_sections):
 
     try:
         from reportlab.lib import colors
-        from reportlab.lib.enums import TA_LEFT
+        from reportlab.lib.enums import TA_LEFT, TA_RIGHT
         from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import (
+            KeepTogether,
             Paragraph,
             SimpleDocTemplate,
-            Spacer,
+            Table,
+            TableStyle,
         )
     except ImportError:
         print(
@@ -1236,42 +1257,40 @@ def save_cv_pdf(cv_data, cv_sections):
         return
 
     documents_dir = Path.home() / 'Documents' / 'JobPylot CVs'
-    full_name = cv_data['personal_details']['full_name']
+    personal_details = cv_data.get('personal_details', {})
+    full_name = personal_details.get('full_name')
+    full_name = full_name.strip() if isinstance(full_name, str) else ''
     safe_name = re.sub(r'[^A-Za-z0-9_-]+', '_', full_name).strip('_')
     filename_stem = f'{safe_name or "JobPylot"}_CV'
-    output_path = documents_dir / f'{filename_stem}.pdf'
-    suffix = 2
 
     try:
         documents_dir.mkdir(parents=True, exist_ok=True)
-        while output_path.exists():
-            output_path = documents_dir / f'{filename_stem}_{suffix}.pdf'
-            suffix += 1
-
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
             'CVTitle',
             parent=styles['Title'],
             alignment=TA_LEFT,
-            textColor=colors.HexColor('#17365D'),
-            fontSize=22,
-            leading=27,
-            spaceAfter=5,
+            textColor=colors.HexColor('#17324D'),
+            fontName='Helvetica-Bold',
+            fontSize=24,
+            leading=29,
+            spaceAfter=6,
         )
         contact_style = ParagraphStyle(
             'CVContact',
             parent=styles['BodyText'],
-            textColor=colors.HexColor('#52606D'),
-            fontSize=9,
-            leading=13,
-            spaceAfter=12,
+            textColor=colors.HexColor('#536477'),
+            fontSize=8.5,
+            leading=12,
+            spaceAfter=10,
         )
         heading_style = ParagraphStyle(
             'CVSectionHeading',
             parent=styles['Heading2'],
-            textColor=colors.HexColor('#176B87'),
-            fontSize=12,
-            leading=16,
+            textColor=colors.HexColor('#176B63'),
+            fontName='Helvetica-Bold',
+            fontSize=11,
+            leading=14,
             spaceBefore=10,
             spaceAfter=5,
             keepWithNext=True,
@@ -1279,10 +1298,42 @@ def save_cv_pdf(cv_data, cv_sections):
         body_style = ParagraphStyle(
             'CVBody',
             parent=styles['BodyText'],
-            textColor=colors.HexColor('#263238'),
+            textColor=colors.HexColor('#273746'),
             fontSize=10,
-            leading=14,
-            spaceAfter=4,
+            leading=14.5,
+            spaceAfter=5,
+        )
+        entry_title_style = ParagraphStyle(
+            'CVEntryTitle',
+            parent=body_style,
+            fontName='Helvetica-Bold',
+            fontSize=10,
+            leading=13,
+            spaceAfter=2,
+        )
+        entry_dates_style = ParagraphStyle(
+            'CVEntryDates',
+            parent=body_style,
+            alignment=TA_RIGHT,
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#536477'),
+        )
+        entry_meta_style = ParagraphStyle(
+            'CVEntryMeta',
+            parent=body_style,
+            fontSize=9,
+            leading=12,
+            textColor=colors.HexColor('#536477'),
+            spaceAfter=3,
+        )
+        bullet_style = ParagraphStyle(
+            'CVBullet',
+            parent=body_style,
+            leftIndent=11,
+            firstLineIndent=-7,
+            bulletIndent=0,
+            spaceAfter=2,
         )
         story = []
         if full_name:
@@ -1291,40 +1342,174 @@ def save_cv_pdf(cv_data, cv_sections):
             story.append(Paragraph('Curriculum Vitae', title_style))
 
         contact_details = [
-            cv_data['personal_details'][field]
+            personal_details.get(field, '').strip()
             for field in ('email', 'phone', 'location', 'linkedin', 'portfolio')
-            if cv_data['personal_details'][field]
+            if isinstance(personal_details.get(field), str)
+            and personal_details.get(field, '').strip()
         ]
         if contact_details:
             story.append(
-                Paragraph(escape(' | '.join(contact_details)), contact_style)
+                Paragraph(
+                    ' &nbsp;|&nbsp; '.join(escape(value) for value in contact_details),
+                    contact_style,
+                )
             )
-        else:
-            story.append(Spacer(1, 8))
 
+        def make_entry_flowables(item):
+            if not isinstance(item, dict):
+                text = str(item).strip()
+                return [Paragraph(escape(text).replace('\n', '<br/>'), body_style)] if text else []
+
+            title = item.get('title') or item.get('name') or item.get('job_title') or ''
+            organization = (
+                item.get('organization') or item.get('employer')
+                or item.get('company_name') or item.get('institution') or ''
+            )
+            location = item.get('location', '')
+            dates = item.get('dates', '')
+            if not dates:
+                dates = ' – '.join(
+                    value for value in (
+                        item.get('start_date', ''),
+                        item.get('end_date', ''),
+                    ) if value
+                )
+
+            flowables = []
+            if title or dates:
+                row = [
+                    Paragraph(escape(str(title)), entry_title_style),
+                    Paragraph(escape(str(dates)), entry_dates_style),
+                ]
+                header = Table(
+                    [row],
+                    colWidths=[document.width * 0.68, document.width * 0.32],
+                    hAlign='LEFT',
+                )
+                header.setStyle(TableStyle([
+                    ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 0),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+                    ('TOPPADDING', (0, 0), (-1, -1), 0),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 1),
+                ]))
+                flowables.append(header)
+
+            meta = ' | '.join(
+                str(value).strip()
+                for value in (organization, location)
+                if isinstance(value, str) and value.strip()
+            )
+            if meta:
+                flowables.append(Paragraph(escape(meta), entry_meta_style))
+
+            details = item.get('details') or item.get('responsibilities') or []
+            if isinstance(details, str):
+                details = [detail.strip() for detail in details.splitlines() if detail.strip()]
+            for detail in details:
+                if isinstance(detail, str) and detail.strip():
+                    flowables.append(
+                        Paragraph(
+                            f'-&nbsp; {escape(detail.strip())}',
+                            bullet_style,
+                        )
+                    )
+
+            technologies = item.get('technologies', '')
+            if technologies:
+                flowables.append(
+                    Paragraph(
+                        f'<b>Technologies:</b> {escape(str(technologies))}',
+                        body_style,
+                    )
+                )
+
+            link = item.get('link', '')
+            if isinstance(link, str) and link.strip():
+                safe_link = escape(link.strip(), quote=True)
+                if safe_link.startswith(('https://', 'http://')):
+                    flowables.append(
+                        Paragraph(
+                            f'<link href="{safe_link}" color="#176B63">'
+                            f'{escape(link.strip())}</link>',
+                            entry_meta_style,
+                        )
+                    )
+            return flowables
+
+        page_width, _ = A4
+        left_margin = 20 * mm
+        right_margin = 20 * mm
+        top_margin = 18 * mm
+        bottom_margin = 19 * mm
+        output_path = documents_dir / f'{filename_stem}.pdf'
+        suffix = 2
+        while output_path.exists():
+            output_path = documents_dir / f'{filename_stem}_{suffix}.pdf'
+            suffix += 1
+        document = SimpleDocTemplate(
+            str(output_path),
+            pagesize=A4,
+            rightMargin=right_margin,
+            leftMargin=left_margin,
+            topMargin=top_margin,
+            bottomMargin=bottom_margin,
+            title=f'{full_name or "JobPylot"} CV',
+            author=full_name,
+        )
         for heading, items in cv_sections:
             if not items:
                 continue
             story.append(Paragraph(escape(heading), heading_style))
             for item in items:
-                safe_item = escape(item).replace('\n', '<br/>')
-                story.append(Paragraph(safe_item, body_style))
+                flowables = make_entry_flowables(item)
+                if flowables:
+                    story.append(KeepTogether(flowables))
 
-        document = SimpleDocTemplate(
-            str(output_path),
-            pagesize=A4,
-            rightMargin=20 * mm,
-            leftMargin=20 * mm,
-            topMargin=18 * mm,
-            bottomMargin=18 * mm,
-            title=f'{full_name or "JobPylot"} CV',
-            author=full_name,
-        )
-        document.build(story)
+        def draw_page_footer(canvas, current_document):
+            canvas.saveState()
+            canvas.setFont('Helvetica', 8)
+            canvas.setFillColor(colors.HexColor('#657586'))
+            canvas.drawRightString(
+                page_width - right_margin,
+                8.5 * mm,
+                f'Page {current_document.page}',
+            )
+            canvas.restoreState()
+
+        document.build(story, onFirstPage=draw_page_footer, onLaterPages=draw_page_footer)
     except OSError as error:
         print(f'Could not save the CV PDF: {error}')
     else:
         print(f'Your CV PDF was saved to: {output_path}')
+
+
+def collect_cv_entries(section_name, fields):
+    entries = []
+    if ask_yes_no(f'Include {section_name.lower()}? (yes/no): ') == 'no':
+        return entries
+
+    while True:
+        entry = {}
+        for key, prompt in fields:
+            entry[key] = input(prompt).strip()
+        if any(value for value in entry.values()):
+            entries.append(entry)
+        else:
+            print('No details entered; this entry was skipped.')
+            break
+        if ask_yes_no(f'Add another entry for {section_name.lower()}? (yes/no): ') == 'no':
+            break
+    return entries
+
+
+def collect_cv_skills(skill_type):
+    if ask_yes_no(f'Include {skill_type.lower()}? (yes/no): ') == 'no':
+        return []
+    values = input(
+        f'Enter {skill_type.lower()}, separated by commas (optional): '
+    ).strip()
+    return [value.strip() for value in values.split(',') if value.strip()]
 
 
 if cv_choice == '1':
@@ -1336,17 +1521,22 @@ if cv_choice == '1':
     linkedin = input('Enter your LinkedIn profile (optional): ').strip()
     portfolio = input('Enter your GitHub or portfolio link (optional): ').strip()
 
-    print('\n----- EDUCATION -----')
-    primary_school = input('Enter your primary school (optional): ').strip()
-    secondary_school = input('Enter your secondary school (optional): ').strip()
-    institution_name = input(
-        'Enter one university or tertiary institution name (optional): '
-    ).strip()
-    qualification = input('Enter your qualification: ').strip()
-    course_name = input('Enter your course of study: ').strip()
-    graduation_year = input(
-        'Enter your graduation year or expected graduation year: '
-    ).strip()
+    education_entries = collect_cv_entries('Education', [
+        ('institution', 'Institution: '),
+        ('qualification', 'Qualification or degree: '),
+        ('course', 'Course or field of study: '),
+        ('dates', 'Study dates (for example, 2022–2026): '),
+        ('graduation_status', 'Graduation status (completed, in progress, expected, etc.): '),
+        ('location', 'Institution location (optional): '),
+    ])
+
+    print('\n----- CAREER OBJECTIVE -----')
+    career_objective = ''
+    if ask_yes_no('Include a career objective? (yes/no): ') == 'yes':
+        career_objective = input(
+            'Enter your objective (optional; press Enter to use your profile '
+            'career goal): '
+        ).strip() or career_goal.strip()
 
     cv_data = {
         'personal_details': {
@@ -1360,67 +1550,122 @@ if cv_choice == '1':
         'professional_summary': '',
         'target_role': normalized_job,
         'career_goal': career_goal,
-        'education': {
-            'primary_school': primary_school,
-            'secondary_school': secondary_school,
-            'institution': institution_name,
-            'qualification': qualification,
-            'course': course_name,
-            'graduation_year': graduation_year,
-        },
+        'career_objective': career_objective,
+        'education': education_entries[0] if education_entries else {},
+        'education_entries': education_entries,
         'work_experience': [],
         'skills': [],
+        'soft_skills': [],
         'projects_and_achievements': [],
+        'leadership_and_volunteering': [],
+        'presentations': [],
+        'certifications_and_training': [],
+        'awards_and_honours': [],
+        'references': [],
     }
 
     print('\n----- WORK EXPERIENCE -----')
     if ask_yes_no('Do you have any work experience? (yes/no): ') == 'yes':
         while True:
-            job_title = input(
-                'Enter the job title you held (not your experience level): '
+            while True:
+                job_title = input(
+                    'Enter the job title you held (not your experience level): '
+                ).strip()
+                if job_title and not is_experience_stage(job_title):
+                    break
+                print('Enter an actual job title, not a career stage or experience level.')
+            company_name = input('Enter your employer or organisation: ').strip()
+            work_location = input('Enter the job location (optional): ').strip()
+            start_date = input('Enter your start date (optional): ').strip()
+            end_date = input('Enter your end date or "Present" (optional): ').strip()
+            responsibilities = input(
+                'Enter responsibilities or achievements separated by semicolons: '
             ).strip()
-            if job_title and not is_experience_stage(job_title):
+            cv_data['work_experience'].append({
+                'job_title': job_title,
+                'company_name': company_name,
+                'location': work_location,
+                'dates': ' – '.join(
+                    value for value in (start_date, end_date) if value
+                ),
+                'details': [
+                    detail.strip()
+                    for detail in responsibilities.split(';')
+                    if detail.strip()
+                ],
+            })
+            if ask_yes_no('Add another work experience entry? (yes/no): ') == 'no':
                 break
-            print('Enter an actual job title, not a career stage or experience level.')
-        company_name = input('Enter your company or organisation name: ').strip()
-        work_location = input('Enter the job location: ').strip()
-        start_date = input('Enter your start date: ').strip()
-        end_date = input('Enter your end date (or current): ').strip()
-        responsibilities = input(
-            'Describe your responsibilities and achievements: '
-        ).strip()
-        cv_data['work_experience'].append({
-            'job_title': job_title,
-            'company_name': company_name,
-            'location': work_location,
-            'start_date': start_date,
-            'end_date': end_date,
-            'responsibilities': responsibilities,
-        })
     else:
         print(
             'No problem! We can highlight your education, skills and projects instead.'
         )
 
-    print('\n----- SKILLS -----')
-    cv_skills = input('Enter your skills, separated by commas: ').strip()
-    cv_data['skills'] = [
-        skill.strip() for skill in cv_skills.split(',') if skill.strip()
-    ]
+    cv_data['projects_and_achievements'] = collect_cv_entries('Projects', [
+        ('title', 'Project name: '),
+        ('details', 'Project description: '),
+        ('technologies', 'Technologies or tools used (optional): '),
+        ('link', 'Project link (optional): '),
+        ('dates', 'Project dates (optional): '),
+    ])
+    for project in cv_data['projects_and_achievements']:
+        project['details'] = [project['details']] if project['details'] else []
 
-    print('\n----- PROJECTS AND ACHIEVEMENTS -----')
-    if ask_yes_no(
-        'Do you have any projects or achievements to include? (yes/no): '
-    ) == 'yes':
-        while True:
-            project = input(
-                'Describe a project or achievement, or press Enter to finish: '
-            ).strip()
-            if not project:
-                break
-            cv_data['projects_and_achievements'].append(project)
-            if ask_yes_no('Add another project or achievement? (yes/no): ') == 'no':
-                break
+    cv_data['leadership_and_volunteering'] = collect_cv_entries(
+        'Leadership and volunteering',
+        [
+            ('title', 'Role or activity: '),
+            ('organization', 'Organization (optional): '),
+            ('location', 'Location (optional): '),
+            ('dates', 'Dates (optional): '),
+            ('details', 'Responsibilities or contributions (separate with semicolons): '),
+        ],
+    )
+    for entry in cv_data['leadership_and_volunteering']:
+        entry['details'] = [
+            detail.strip() for detail in entry['details'].split(';') if detail.strip()
+        ]
+
+    cv_data['presentations'] = collect_cv_entries('Presentations', [
+        ('title', 'Presentation title: '),
+        ('organization', 'Event or organization (optional): '),
+        ('dates', 'Date (optional): '),
+        ('details', 'Description (optional): '),
+    ])
+    for entry in cv_data['presentations']:
+        entry['details'] = [entry['details']] if entry['details'] else []
+
+    cv_data['skills'] = collect_cv_skills('Technical skills')
+    cv_data['soft_skills'] = collect_cv_skills('Soft skills')
+
+    cv_data['certifications_and_training'] = collect_cv_entries(
+        'Certifications and training',
+        [
+            ('title', 'Certification or training name: '),
+            ('organization', 'Issuing organization (optional): '),
+            ('dates', 'Date or validity period (optional): '),
+        ],
+    )
+    cv_data['awards_and_honours'] = collect_cv_entries('Awards and honours', [
+        ('title', 'Award or honour: '),
+        ('organization', 'Awarding organization (optional): '),
+        ('dates', 'Date (optional): '),
+        ('details', 'Description (optional): '),
+    ])
+    for entry in cv_data['awards_and_honours']:
+        entry['details'] = [entry['details']] if entry['details'] else []
+
+    if ask_yes_no('Would you like to include references? (yes/no): ') == 'yes':
+        cv_data['references'] = collect_cv_entries(
+            'References',
+            [
+                ('name', 'Reference name: '),
+                ('organization', 'Title or organization (optional): '),
+                ('details', 'Contact information: '),
+            ],
+        )
+        for reference in cv_data['references']:
+            reference['details'] = [reference['details']] if reference['details'] else []
 
     print('\n----- PROFESSIONAL SUMMARY -----')
     professional_summary = generate_professional_summary(cv_data)
@@ -1438,79 +1683,49 @@ if cv_choice == '1':
         for field in ('email', 'phone', 'location', 'linkedin', 'portfolio')
         if personal_details[field]
     ]
-    education = cv_data['education']
     education_details = []
-    qualification_text = professional_title(education['qualification'])
-    course_text = professional_title(education['course'])
-    if course_text and course_text.casefold() in qualification_text.casefold():
-        course_text = ''
-    qualification_and_course = ' in '.join(
-        value for value in (qualification_text, course_text) if value
-    )
-    if qualification_and_course:
-        education_details.append(qualification_and_course)
-    for field, label in (
-        ('primary_school', 'Primary school'),
-        ('secondary_school', 'Secondary school'),
-        ('institution', 'University / tertiary institution'),
-    ):
-        if education[field]:
-            education_details.append(
-                f'{label}: {professional_institution_name(education[field])}'
-            )
-    if education['graduation_year']:
-        year_match = re.search(
-            r'\b(?:19|20|21)\d{2}\b',
-            education['graduation_year'],
-        )
-        if year_match and int(year_match.group(0)) > date.today().year:
-            education_details.append(
-                f'Expected graduation: {year_match.group(0)}'
-            )
-        else:
-            education_details.append(
-                f'Graduation year: {education["graduation_year"]}'
-            )
+    for entry in cv_data['education_entries']:
+        qualification_text = professional_title(entry['qualification'])
+        course_text = professional_title(entry['course'])
+        if (
+            course_text
+            and qualification_text
+            and normalize_skill(course_text)
+            in normalize_skill(qualification_text)
+        ):
+            course_text = ''
+        details = []
+        if course_text and qualification_text:
+            details.append(f'Course: {course_text}')
+        if entry['graduation_status']:
+            details.append(f'Status: {entry["graduation_status"]}')
+        education_details.append({
+            'title': qualification_text or course_text or 'Education',
+            'organization': professional_institution_name(entry['institution'])
+            if entry['institution'] else '',
+            'location': entry['location'],
+            'dates': entry['dates'],
+            'details': details,
+        })
+
     cv_sections = [
-        ('PROFESSIONAL SUMMARY', [cv_data['professional_summary']]
+        ('PROFESSIONAL PROFILE SUMMARY', [cv_data['professional_summary']]
          if cv_data['professional_summary'] else []),
-        ('TARGET ROLE', [cv_data['target_role']] if cv_data['target_role'] else []),
-        ('CAREER GOAL', [cv_data['career_goal']] if cv_data['career_goal'] else []),
-        ('EDUCATION', [detail for detail in education_details if detail]),
+        ('CAREER OBJECTIVE', [cv_data['career_objective']]
+         if cv_data['career_objective'] else []),
+        ('EDUCATION', education_details),
+        ('WORK EXPERIENCE', cv_data['work_experience']),
+        ('PROJECTS', cv_data['projects_and_achievements']),
+        ('LEADERSHIP AND VOLUNTEERING', cv_data['leadership_and_volunteering']),
+        ('PRESENTATIONS', cv_data['presentations']),
+        ('TECHNICAL SKILLS', [', '.join(cv_data['skills'])]
+         if cv_data['skills'] else []),
+        ('SOFT SKILLS', [', '.join(cv_data['soft_skills'])]
+         if cv_data['soft_skills'] else []),
+        ('CERTIFICATIONS AND TRAINING', cv_data['certifications_and_training']),
+        ('AWARDS AND HONOURS', cv_data['awards_and_honours']),
+        ('REFERENCES', cv_data['references']),
     ]
-
-    if cv_data['work_experience']:
-        work_experience_details = []
-        for experience in cv_data['work_experience']:
-            details = [
-                ' | '.join(
-                    value for value in (
-                        experience['job_title'],
-                        experience['company_name'],
-                    ) if value
-                ),
-                experience['location'],
-                ' - '.join(
-                    value for value in (
-                        experience['start_date'],
-                        experience['end_date'],
-                    ) if value
-                ),
-                experience['responsibilities'],
-            ]
-            work_experience_details.extend(
-                detail for detail in details if detail
-            )
-        cv_sections.append(('WORK EXPERIENCE', work_experience_details))
-
-    if cv_data['skills']:
-        cv_sections.append(('SKILLS', [', '.join(cv_data['skills'])]))
-
-    if cv_data['projects_and_achievements']:
-        cv_sections.append((
-            'PROJECTS AND ACHIEVEMENTS',
-            [f'- {project}' for project in cv_data['projects_and_achievements']],
-        ))
 
     print('\n----- CV PREVIEW -----')
     print(personal_details['full_name'] or 'Curriculum Vitae')
