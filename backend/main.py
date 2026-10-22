@@ -2,12 +2,15 @@ import os
 import re
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 import requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
+
+from backend.job_matcher import entry_level, match_job
+from backend.career_skills import career_requirements
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_FILE)
@@ -51,7 +54,10 @@ def job_search_error_detail(response: requests.Response) -> str | None:
     return detail.strip() if isinstance(detail, str) and detail.strip() else None
 
 
-def _normalize_job(job: Mapping[str, object]) -> dict[str, str]:
+def _normalize_job(
+    job: Mapping[str, object],
+    user_skills: list[str] | None = None,
+) -> dict[str, object]:
     fields = {
         "title": "title",
         "company": "company",
@@ -66,6 +72,21 @@ def _normalize_job(job: Mapping[str, object]) -> dict[str, str]:
         if (value := _optional_text(job, source)) is not None
     }
     normalized["source"] = "Jooble"
+    title = _optional_text(job, "title")
+    normalized["potentially_entry_level"] = entry_level(title) if title else False
+    required_skills = job.get("required_skills")
+    if (
+        user_skills
+        and title
+        and isinstance(required_skills, list)
+    ):
+        required_skills = [
+            skill.strip()
+            for skill in required_skills
+            if isinstance(skill, str) and skill.strip()
+        ]
+        if required_skills:
+            normalized.update(match_job(title, user_skills, required_skills))
     return normalized
 
 
@@ -87,7 +108,8 @@ def _search_jooble(
     city: str,
     country: str,
     arrangement: str,
-) -> tuple[list[dict[str, str]], int | None]:
+    user_skills: list[str] | None = None,
+) -> tuple[list[dict[str, object]], int | None]:
     api_key = _configured_jooble_api_key()
     if not api_key or api_key == "YOUR_ACTUAL_API_KEY":
         raise HTTPException(
@@ -146,7 +168,7 @@ def _search_jooble(
         )
 
     jobs = [
-        _normalize_job(job)
+        _normalize_job(job, user_skills)
         for job in data["jobs"]
         if isinstance(job, Mapping) and _matches_arrangement(job, arrangement)
     ][:MAX_JOB_RESULTS]
@@ -173,17 +195,34 @@ def search_jobs(
     city: str = Query(default="", max_length=100, description="City to search"),
     country: str = Query(default="Nigeria", min_length=1, max_length=100),
     arrangement: Literal["Any", "Onsite", "Hybrid", "Remote"] = "Any",
+    user_skills: Annotated[
+        list[str] | None,
+        Query(
+            description="User skills for matching against structured listing requirements",
+        ),
+    ] = None,
 ) -> dict[str, object]:
     title = title.strip()
     city = city.strip()
     country = country.strip()
+    user_skills = [
+        skill.strip()
+        for skill in user_skills or []
+        if skill.strip()
+    ]
     if not title or not country:
         raise HTTPException(
             status_code=422,
             detail="Enter a job title and country before searching.",
         )
 
-    jobs, total_count = _search_jooble(title, city, country, arrangement)
+    jobs, total_count = _search_jooble(
+        title,
+        city,
+        country,
+        arrangement,
+        user_skills,
+    )
 
     result: dict[str, object] = {
         "query": title,
