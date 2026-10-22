@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(ENV_FILE)
 
 app = FastAPI(title="JobPylot AI API")
 
@@ -29,6 +30,14 @@ ARRANGEMENT_PATTERNS = {
 def _optional_text(job: Mapping[str, object], field: str) -> str | None:
     value = job.get(field)
     return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _configured_jooble_api_key() -> str:
+    api_key = os.getenv("JOOBLE_API_KEY", "").strip()
+    if not api_key or api_key == "YOUR_ACTUAL_API_KEY":
+        load_dotenv(ENV_FILE, override=True)
+        api_key = os.getenv("JOOBLE_API_KEY", "").strip()
+    return api_key
 
 
 def job_search_error_detail(response: requests.Response) -> str | None:
@@ -79,7 +88,7 @@ def _search_jooble(
     country: str,
     arrangement: str,
 ) -> tuple[list[dict[str, str]], int | None]:
-    api_key = os.getenv("JOOBLE_API_KEY", "").strip()
+    api_key = _configured_jooble_api_key()
     if not api_key or api_key == "YOUR_ACTUAL_API_KEY":
         raise HTTPException(
             status_code=503,

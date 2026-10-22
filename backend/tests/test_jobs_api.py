@@ -1,12 +1,19 @@
 import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 import requests
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from backend.main import app, job_search_error_detail, search_jobs
+from backend.main import (
+    app,
+    job_search_error_detail,
+    search_jobs,
+    _configured_jooble_api_key,
+)
 
 
 class JoobleSearchTests(unittest.TestCase):
@@ -79,12 +86,49 @@ class JoobleSearchTests(unittest.TestCase):
         self.assertEqual(result["city"], "Nigeria")
 
     def test_missing_api_key_returns_clear_configuration_error(self) -> None:
-        with patch.dict(os.environ, {"JOOBLE_API_KEY": ""}):
+        with (
+            patch.dict(os.environ, {"JOOBLE_API_KEY": ""}),
+            patch("backend.main.load_dotenv"),
+        ):
             with self.assertRaises(HTTPException) as raised:
                 search_jobs("Backend Engineer", "Lagos", "Nigeria", "Any")
 
         self.assertEqual(raised.exception.status_code, 503)
         self.assertIn("JOOBLE_API_KEY", raised.exception.detail)
+
+    def test_missing_process_key_is_reloaded_from_local_env_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text(
+                "JOOBLE_API_KEY=local-test-key\n",
+                encoding="utf-8",
+            )
+            with (
+                patch("backend.main.ENV_FILE", env_file),
+                patch.dict(os.environ, {"JOOBLE_API_KEY": ""}),
+            ):
+                self.assertEqual(
+                    _configured_jooble_api_key(),
+                    "local-test-key",
+                )
+
+    def test_valid_process_key_takes_precedence_over_env_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            env_file = Path(temporary_directory) / ".env"
+            env_file.write_text(
+                "JOOBLE_API_KEY=file-test-key\n",
+                encoding="utf-8",
+            )
+            with (
+                patch("backend.main.ENV_FILE", env_file),
+                patch.dict(os.environ, {"JOOBLE_API_KEY": "process-test-key"}),
+                patch("backend.main.load_dotenv") as load_dotenv,
+            ):
+                self.assertEqual(
+                    _configured_jooble_api_key(),
+                    "process-test-key",
+                )
+                load_dotenv.assert_not_called()
 
     def test_rejected_api_key_does_not_expose_key(self) -> None:
         with patch(
@@ -250,7 +294,10 @@ class JoobleSearchTests(unittest.TestCase):
         )
 
     def test_jobs_endpoint_reports_missing_api_key_as_configuration_error(self) -> None:
-        with patch.dict(os.environ, {"JOOBLE_API_KEY": ""}):
+        with (
+            patch.dict(os.environ, {"JOOBLE_API_KEY": ""}),
+            patch("backend.main.load_dotenv"),
+        ):
             response = self.client.get(
                 "/jobs",
                 params={"title": "Data Analyst", "country": "Nigeria"},
