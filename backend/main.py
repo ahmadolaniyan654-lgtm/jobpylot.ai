@@ -57,6 +57,7 @@ def job_search_error_detail(response: requests.Response) -> str | None:
 def _normalize_job(
     job: Mapping[str, object],
     user_skills: list[str] | None = None,
+    career_title: str = '',
 ) -> dict[str, object]:
     fields = {
         "title": "title",
@@ -74,10 +75,10 @@ def _normalize_job(
     normalized["source"] = "Jooble"
     title = _optional_text(job, "title")
     normalized["potentially_entry_level"] = entry_level(title) if title else False
-    required_skills = job.get("required_skills")
+    required_skills = career_requirements.get(career_title)
     if (
         user_skills
-        and title
+        and career_title
         and isinstance(required_skills, list)
     ):
         required_skills = [
@@ -168,7 +169,7 @@ def _search_jooble(
         )
 
     jobs = [
-        _normalize_job(job, user_skills)
+        _normalize_job(job, user_skills, career_title=title)
         for job in data["jobs"]
         if isinstance(job, Mapping) and _matches_arrangement(job, arrangement)
     ][:MAX_JOB_RESULTS]
