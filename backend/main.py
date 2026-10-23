@@ -75,7 +75,9 @@ def _normalize_job(
     normalized["source"] = "Jooble"
     title = _optional_text(job, "title")
     normalized["potentially_entry_level"] = entry_level(title) if title else False
-    required_skills = career_requirements.get(career_title)
+    required_skills = job.get('required_skills')
+    if not isinstance(required_skills, list):
+        required_skills = next((skills for career, skills in career_requirements.items() if career.strip().casefold() == career_title.strip().casefold()), None)
     if (
         user_skills
         and career_title
@@ -86,7 +88,7 @@ def _normalize_job(
             for skill in required_skills
             if isinstance(skill, str) and skill.strip()
         ]
-        if required_skills:
+        if required_skills and isinstance(job.get('required_skills'), list):
             normalized.update(match_job(title, user_skills, required_skills))
     return normalized
 
