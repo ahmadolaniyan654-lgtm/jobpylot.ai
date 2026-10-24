@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,7 @@ from backend.main import (
     search_jobs,
     _configured_jooble_api_key,
 )
+from backend import database
 
 
 class JoobleSearchTests(unittest.TestCase):
@@ -22,7 +24,24 @@ class JoobleSearchTests(unittest.TestCase):
         self.environment = patch.dict(os.environ, {"JOOBLE_API_KEY": self.api_key})
         self.environment.start()
         self.addCleanup(self.environment.stop)
+        self.local_search_patcher = patch(
+            "backend.main.search_local_jobs",
+            return_value=[],
+        )
+        self.local_search = self.local_search_patcher.start()
+        self.addCleanup(self.local_search_patcher.stop)
         self.client = TestClient(app)
+
+    def test_database_connection_uses_project_root_database_path(self) -> None:
+        expected_path = Path(database.__file__).resolve().parent.parent / "jobpylot.db"
+        connection = Mock()
+
+        with patch("backend.database.sqlite3.connect", return_value=connection) as connect:
+            result = database.connect_db()
+
+        self.assertEqual(database.DB_PATH, expected_path)
+        connect.assert_called_once_with(expected_path)
+        self.assertIs(result, connection)
 
     @staticmethod
     def response(status_code: int, data: object = None) -> Mock:
@@ -96,6 +115,7 @@ class JoobleSearchTests(unittest.TestCase):
             {"keywords": "Backend Engineer", "location": "Nigeria"},
         )
         self.assertEqual(result["city"], "Nigeria")
+        self.local_search.assert_not_called()
 
     def test_missing_api_key_returns_clear_configuration_error(self) -> None:
         with (
@@ -242,6 +262,106 @@ class JoobleSearchTests(unittest.TestCase):
             result = search_jobs("Data Analyst", "Lagos", "Nigeria", "Remote")
 
         self.assertEqual([job["title"] for job in result["jobs"]], ["Remote Data Analyst"])
+
+    def test_local_search_adds_sqlite_listing_without_arrangement_filter(self) -> None:
+        local_row = (
+            1,
+            "Data Analyst",
+            "Local Test Company",
+            "Lagos",
+            "https://example.invalid/local-listing",
+        )
+        with (
+            patch(
+                "backend.main.requests.post",
+                return_value=self.response(200, {"totalCount": 7, "jobs": []}),
+            ),
+            patch("backend.main.search_local_jobs", return_value=[local_row]) as local_search,
+        ):
+            result = search_jobs(" Data Analyst ", " Lagos ", "Nigeria", "Remote")
+
+        local_search.assert_called_once_with("Data Analyst", "Lagos")
+        self.assertEqual(result["total_count"], 7)
+        self.assertEqual(result["source"], "Jooble")
+        self.assertEqual(
+            result["jobs"],
+            [
+                {
+                    "title": "Data Analyst",
+                    "source": "SQLite",
+                    "potentially_entry_level": False,
+                    "company": "Local Test Company",
+                    "location": "Lagos",
+                    "url": "https://example.invalid/local-listing",
+                }
+            ],
+        )
+
+    def test_local_results_duplicate_of_jooble_are_skipped(self) -> None:
+        jooble_listing = {
+            "title": "Data Analyst",
+            "company": "Example Company",
+            "location": "Lagos",
+            "link": "https://example.invalid/listing",
+        }
+        local_rows = [
+            (
+                1,
+                " data ANALYST ",
+                " example company ",
+                "LAGOS",
+                " https://example.invalid/listing ",
+            ),
+            (
+                2,
+                "Data Analyst",
+                "Different Company",
+                "Lagos",
+                "https://example.invalid/other-listing",
+            ),
+        ]
+        with (
+            patch(
+                "backend.main.requests.post",
+                return_value=self.response(
+                    200, {"totalCount": 1, "jobs": [jooble_listing]}
+                ),
+            ),
+            patch("backend.main.search_local_jobs", return_value=local_rows),
+        ):
+            result = search_jobs("Data Analyst", "Lagos", "Nigeria", "Any")
+
+        self.assertEqual(len(result["jobs"]), 2)
+        self.assertEqual(result["jobs"][0]["source"], "Jooble")
+        self.assertEqual(result["jobs"][1]["company"], "Different Company")
+        self.assertEqual(result["jobs"][1]["source"], "SQLite")
+
+    def test_local_search_errors_are_reported(self) -> None:
+        with (
+            patch(
+                "backend.main.requests.post",
+                return_value=self.response(200, {"jobs": []}),
+            ),
+            patch(
+                "backend.main.search_local_jobs",
+                side_effect=sqlite3.OperationalError("database unavailable"),
+            ),
+        ):
+            with self.assertRaises(HTTPException) as raised:
+                search_jobs("Data Analyst", "Lagos", "Nigeria", "Any")
+
+        self.assertEqual(raised.exception.status_code, 503)
+        self.assertIn("Local job search", raised.exception.detail)
+
+    def test_empty_city_skips_local_search(self) -> None:
+        with patch(
+            "backend.main.requests.post",
+            return_value=self.response(200, {"jobs": []}),
+        ):
+            result = search_jobs("Data Analyst", "", "Nigeria", "Any")
+
+        self.local_search.assert_not_called()
+        self.assertEqual(result["jobs"], [])
 
     def test_health_endpoint_returns_ok(self) -> None:
         response = self.client.get("/health")

@@ -1,5 +1,6 @@
 import os
 import re
+import sqlite3
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Annotated, Literal
@@ -11,6 +12,7 @@ from fastapi.responses import FileResponse
 
 from backend.job_matcher import entry_level, match_job
 from backend.career_skills import career_requirements
+from backend.database import search_jobs as search_local_jobs
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_FILE)
@@ -104,6 +106,37 @@ def _matches_arrangement(job: Mapping[str, object], arrangement: str) -> bool:
     )
     pattern = ARRANGEMENT_PATTERNS[arrangement]
     return bool(pattern.search(searchable_text))
+
+
+def _normalize_local_job(
+    row: tuple[int, str, str | None, str | None, str | None],
+) -> dict[str, object]:
+    _, title, company, city, application_link = row
+    normalized: dict[str, object] = {
+        "title": title,
+        "source": "SQLite",
+        "potentially_entry_level": entry_level(title),
+    }
+    if company:
+        normalized["company"] = company
+    if city:
+        normalized["location"] = city
+    if application_link:
+        normalized["url"] = application_link
+    return normalized
+
+
+def _job_identity(job: Mapping[str, object]) -> tuple[str, str, str, str]:
+    def normalized_value(field: str) -> str:
+        value = job.get(field)
+        return value.strip().casefold() if isinstance(value, str) else ""
+
+    return (
+        normalized_value("title"),
+        normalized_value("company"),
+        normalized_value("location"),
+        normalized_value("url"),
+    )
 
 
 def _search_jooble(
@@ -230,7 +263,7 @@ def search_jobs(
             detail="Enter a job title and country before searching.",
         )
 
-    jobs, total_count = _search_jooble(
+    jooble_jobs, total_count = _search_jooble(
         title,
         city,
         country,
@@ -238,13 +271,34 @@ def search_jobs(
         user_skills,
     )
 
+    local_jobs: list[dict[str, object]] = []
+    if city:
+        try:
+            local_jobs = [
+                _normalize_local_job(row)
+                for row in search_local_jobs(title, city)
+            ]
+        except sqlite3.Error:
+            raise HTTPException(
+                status_code=503,
+                detail="Local job search is temporarily unavailable.",
+            ) from None
+
+    seen = {_job_identity(job) for job in jooble_jobs}
+    combined_jobs = list(jooble_jobs)
+    for job in local_jobs:
+        identity = _job_identity(job)
+        if identity not in seen:
+            seen.add(identity)
+            combined_jobs.append(job)
+
     result: dict[str, object] = {
         "query": title,
         "city": city or country,
         "country": country,
         "arrangement": arrangement,
         "source": "Jooble",
-        "jobs": jobs,
+        "jobs": combined_jobs[:MAX_JOB_RESULTS],
     }
     if total_count is not None:
         result["total_count"] = total_count
