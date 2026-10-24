@@ -127,12 +127,23 @@ def _search_jooble(
                 "keywords": title,
                 "location": f"{city}, {country}" if city else country,
             },
+            headers={"Content-Type": "application/json"},
             timeout=JOB_REQUEST_TIMEOUT,
         )
-    except requests.RequestException:
+    except requests.Timeout:
+        raise HTTPException(
+            status_code=504,
+            detail="Jooble's search request timed out. Please try again later.",
+        ) from None
+    except requests.ConnectionError:
         raise HTTPException(
             status_code=502,
             detail="Could not connect to Jooble. Check your connection and try again.",
+        ) from None
+    except requests.RequestException:
+        raise HTTPException(
+            status_code=502,
+            detail="Jooble's search request failed before a response was received. Please try again later.",
         ) from None
 
     if response.status_code in (401, 403):

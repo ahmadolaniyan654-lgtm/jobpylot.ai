@@ -58,6 +58,18 @@ class JoobleSearchTests(unittest.TestCase):
                     post.call_args.kwargs["json"],
                     {"keywords": title, "location": f"{city}, Nigeria"},
                 )
+                self.assertEqual(
+                    post.call_args.args[0],
+                    f"https://jooble.org/api/{self.api_key}",
+                )
+                self.assertEqual(
+                    post.call_args.kwargs["headers"],
+                    {"Content-Type": "application/json"},
+                )
+                self.assertEqual(
+                    post.call_args.kwargs["timeout"],
+                    15,
+                )
                 self.assertEqual(result["jobs"][0]["title"], listing["title"])
                 self.assertEqual(result["jobs"][0]["source"], "Jooble")
                 self.assertEqual(result["jobs"][0]["url"], listing["link"])
@@ -188,6 +200,20 @@ class JoobleSearchTests(unittest.TestCase):
                 search_jobs("Backend Engineer", "Lagos", "Nigeria", "Any")
 
         self.assertEqual(raised.exception.status_code, 502)
+        self.assertNotIn(self.api_key, raised.exception.detail)
+
+    def test_timeout_is_reported_separately_without_exposing_key(self) -> None:
+        with patch(
+            "backend.main.requests.post",
+            side_effect=requests.Timeout(
+                f"Request timed out for {self.api_key}"
+            ),
+        ):
+            with self.assertRaises(HTTPException) as raised:
+                search_jobs("Backend Engineer", "Lagos", "Nigeria", "Any")
+
+        self.assertEqual(raised.exception.status_code, 504)
+        self.assertIn("timed out", raised.exception.detail)
         self.assertNotIn(self.api_key, raised.exception.detail)
 
     def test_unexpected_api_response_is_reported(self) -> None:
