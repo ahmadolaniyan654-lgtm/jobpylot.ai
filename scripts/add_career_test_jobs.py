@@ -2,53 +2,102 @@ import sqlite3
 import sys
 from pathlib import Path
 
-PROJECT_ROOT = Path(r"C:\Users\USER\OneDrive\Desktop\jobpylot Ai")
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = PROJECT_ROOT / "jobpylot.db"
 
 # Allow imports from the project root, even if launched from another directory.
-sys.path.insert(0, str(PROJECT_ROOT))
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.career_skills import career_requirements
 
 
-samples = [
-    ("Data Analyst", "JobPylot TEST DATA 01", "Lagos", "https://example.invalid/jobpylot-test/listing-01"),
-    ("Web Developer", "JobPylot TEST DATA 02", "Abuja", "https://example.invalid/jobpylot-test/listing-02"),
-    ("Python Developer", "JobPylot TEST DATA 03", "Port Harcourt", "https://example.invalid/jobpylot-test/listing-03"),
-    ("Cybersecurity Analyst", "JobPylot TEST DATA 04", "Ibadan", "https://example.invalid/jobpylot-test/listing-04"),
-    ("Financial Accountant", "JobPylot TEST DATA 05", "Kano", "https://example.invalid/jobpylot-test/listing-05"),
-    ("Business Analyst", "JobPylot TEST DATA 06", "Enugu", "https://example.invalid/jobpylot-test/listing-06"),
-    ("Marketing Officer", "JobPylot TEST DATA 07", "Kaduna", "https://example.invalid/jobpylot-test/listing-07"),
-    ("Head of a Company", "JobPylot TEST DATA 08", "Benin City", "https://example.invalid/jobpylot-test/listing-08"),
-    ("Project Manager", "JobPylot TEST DATA 09", "Jos", "https://example.invalid/jobpylot-test/listing-09"),
-    ("Physiotherapist", "JobPylot TEST DATA 10", "Ilorin", "https://example.invalid/jobpylot-test/listing-10"),
-    ("Civil Engineer", "JobPylot TEST DATA 11", "Abeokuta", "https://example.invalid/jobpylot-test/listing-11"),
-    ("Electrical and Electronics Engineer", "JobPylot TEST DATA 12", "Uyo", "https://example.invalid/jobpylot-test/listing-12"),
-    ("Chemical Engineer", "JobPylot TEST DATA 13", "Owerri", "https://example.invalid/jobpylot-test/listing-13"),
-    ("Food Engineer", "JobPylot TEST DATA 14", "Asaba", "https://example.invalid/jobpylot-test/listing-14"),
-    ("Architect", "JobPylot TEST DATA 15", "Maiduguri", "https://example.invalid/jobpylot-test/listing-15"),
-    ("Mechanical Engineer", "JobPylot TEST DATA 16", "Calabar", "https://example.invalid/jobpylot-test/listing-16"),
-    ("Agricultural and Bioresources Engineer", "JobPylot TEST DATA 17", "Akure", "https://example.invalid/jobpylot-test/listing-17"),
-    ("Psychologist", "JobPylot TEST DATA 18", "Warri", "https://example.invalid/jobpylot-test/listing-18"),
-    ("Medical Laboratory Scientist", "JobPylot TEST DATA 19", "Bauchi", "https://example.invalid/jobpylot-test/listing-19"),
-    ("Nurse", "JobPylot TEST DATA 20", "Sokoto", "https://example.invalid/jobpylot-test/listing-20"),
-    ("Teacher/Lecturer", "JobPylot TEST DATA 21", "Minna", "https://example.invalid/jobpylot-test/listing-21"),
-    ("Shop Attendant", "JobPylot TEST DATA 22", "Onitsha", "https://example.invalid/jobpylot-test/listing-22"),
-    ("Cashier", "JobPylot TEST DATA 23", "Makurdi", "https://example.invalid/jobpylot-test/listing-23"),
-    ("Office Assistant", "JobPylot TEST DATA 24", "Ado-Ekiti", "https://example.invalid/jobpylot-test/listing-24"),
-    ("Economist", "JobPylot TEST DATA 25", "Yenagoa", "https://example.invalid/jobpylot-test/listing-25"),
-    ("Petroleum and Gas Engineer", "JobPylot TEST DATA 26", "Lafia", "https://example.invalid/jobpylot-test/listing-26"),
-]
+LEGACY_SAMPLE_DETAILS = {
+    "Data Analyst": ("Lagos", "https://example.invalid/jobpylot-test/listing-01"),
+    "Web Developer": ("Abuja", "https://example.invalid/jobpylot-test/listing-02"),
+    "Python Developer": ("Port Harcourt", "https://example.invalid/jobpylot-test/listing-03"),
+    "Cybersecurity Analyst": ("Ibadan", "https://example.invalid/jobpylot-test/listing-04"),
+    "Financial Accountant": ("Kano", "https://example.invalid/jobpylot-test/listing-05"),
+    "Business Analyst": ("Enugu", "https://example.invalid/jobpylot-test/listing-06"),
+    "Marketing Officer": ("Kaduna", "https://example.invalid/jobpylot-test/listing-07"),
+    "Head of a Company": ("Benin City", "https://example.invalid/jobpylot-test/listing-08"),
+    "Project Manager": ("Jos", "https://example.invalid/jobpylot-test/listing-09"),
+    "Physiotherapist": ("Ilorin", "https://example.invalid/jobpylot-test/listing-10"),
+    "Civil Engineer": ("Abeokuta", "https://example.invalid/jobpylot-test/listing-11"),
+    "Electrical and Electronics Engineer": ("Uyo", "https://example.invalid/jobpylot-test/listing-12"),
+    "Chemical Engineer": ("Owerri", "https://example.invalid/jobpylot-test/listing-13"),
+    "Food Engineer": ("Asaba", "https://example.invalid/jobpylot-test/listing-14"),
+    "Architect": ("Maiduguri", "https://example.invalid/jobpylot-test/listing-15"),
+    "Mechanical Engineer": ("Calabar", "https://example.invalid/jobpylot-test/listing-16"),
+    "Agricultural and Bioresources Engineer": ("Akure", "https://example.invalid/jobpylot-test/listing-17"),
+    "Psychologist": ("Warri", "https://example.invalid/jobpylot-test/listing-18"),
+    "Medical Laboratory Scientist": ("Bauchi", "https://example.invalid/jobpylot-test/listing-19"),
+    "Nurse": ("Sokoto", "https://example.invalid/jobpylot-test/listing-20"),
+    "Teacher/Lecturer": ("Minna", "https://example.invalid/jobpylot-test/listing-21"),
+    "Shop Attendant": ("Onitsha", "https://example.invalid/jobpylot-test/listing-22"),
+    "Cashier": ("Makurdi", "https://example.invalid/jobpylot-test/listing-23"),
+    "Office Assistant": ("Ado-Ekiti", "https://example.invalid/jobpylot-test/listing-24"),
+    "Economist": ("Yenagoa", "https://example.invalid/jobpylot-test/listing-25"),
+    "Petroleum and Gas Engineer": ("Lafia", "https://example.invalid/jobpylot-test/listing-26"),
+}
 
-def main() -> None:
-    if len(samples) != 26 or [row[0] for row in samples] != list(career_requirements):
-        raise RuntimeError("Sample titles do not exactly match career_requirements.")
+SAMPLE_CITIES = (
+    "Lagos",
+    "Abuja",
+    "Port Harcourt",
+    "Ibadan",
+    "Kano",
+    "Enugu",
+    "Kaduna",
+    "Benin City",
+    "Jos",
+    "Ilorin",
+    "Abeokuta",
+    "Uyo",
+    "Owerri",
+    "Asaba",
+    "Maiduguri",
+    "Calabar",
+    "Akure",
+    "Warri",
+    "Bauchi",
+    "Sokoto",
+    "Minna",
+    "Onitsha",
+    "Makurdi",
+    "Ado-Ekiti",
+    "Yenagoa",
+    "Lafia",
+)
 
-    if not DB_PATH.is_file():
-        raise FileNotFoundError(f"Existing database not found: {DB_PATH}")
+
+def build_samples() -> list[tuple[str, str, str, str]]:
+    samples = []
+    for index, title in enumerate(career_requirements, start=1):
+        city, application_link = LEGACY_SAMPLE_DETAILS.get(
+            title,
+            (
+                SAMPLE_CITIES[(index - 1) % len(SAMPLE_CITIES)],
+                f"https://example.invalid/jobpylot-test/listing-{index:02d}",
+            ),
+        )
+        samples.append(
+            (
+                title,
+                f"JobPylot TEST DATA {index:02d}",
+                city,
+                application_link,
+            )
+        )
+    return samples
+
+
+def seed_jobs(db_path: Path) -> tuple[int, int]:
+    if not db_path.is_file():
+        raise FileNotFoundError(f"Existing database not found: {db_path}")
 
     # mode=rw prevents SQLite from creating a database if the path is unavailable.
-    db_uri = f"{DB_PATH.as_uri()}?mode=rw"
+    db_uri = f"{db_path.resolve().as_uri()}?mode=rw"
     conn = sqlite3.connect(db_uri, uri=True)
 
     try:
@@ -62,8 +111,9 @@ def main() -> None:
             ).fetchone()
 
             if table_exists is None:
-                raise RuntimeError(f"The jobs table does not exist in {DB_PATH}.")
+                raise RuntimeError(f"The jobs table does not exist in {db_path}.")
 
+            samples = build_samples()
             missing = []
             for sample in samples:
                 existing = conn.execute(
@@ -88,10 +138,12 @@ def main() -> None:
     finally:
         conn.close()
 
-    print(
-        f"Inserted {len(missing)} listings; "
-        f"skipped {len(samples) - len(missing)} exact matches."
-    )
+    return len(missing), len(samples) - len(missing)
+
+
+def main() -> None:
+    inserted, skipped = seed_jobs(DB_PATH)
+    print(f"Inserted {inserted} listings; skipped {skipped} exact matches.")
 
 
 if __name__ == "__main__":

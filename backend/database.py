@@ -15,10 +15,24 @@ def create_jobs_table():
     conn.close()
 def add_job(title, company, city, application_link):
     conn = connect_db()
-    cursor= conn.cursor()
-    cursor.execute("INSERT INTO jobs (title, company, city, application_link) VALUES (?,?,?,?)", (title, company, city, application_link))
-    conn.commit()
-    conn.close()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT 1 FROM jobs
+            WHERE LOWER(title)= LOWER(?)
+            AND LOWER(company) = LOWER(?)
+            AND LOWER(city)= LOWER(?)
+            AND LOWER(application_link) = LOWER(?)""",
+            (title, company, city, application_link),
+        )
+
+        if cursor.fetchone():
+            return False
+        cursor.execute("INSERT INTO jobs (title, company, city, application_link) VALUES (?,?,?,?)", (title, company, city, application_link))
+        conn.commit()
+        return True
+    finally:
+        conn.close()
 def search_jobs(title, city):
     conn = connect_db()
     try:

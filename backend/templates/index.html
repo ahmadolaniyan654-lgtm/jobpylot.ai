@@ -936,6 +936,10 @@
                             <input name="title" type="text" maxlength="100" placeholder="e.g. Backend Engineer" required>
                         </label>
                         <label>
+                            Your skills (optional)
+                            <input name="user_skills" type="text" placeholder="e.g. Python, SQL, Excel">
+                        </label>
+                        <label>
                             City
                             <input name="city" type="text" maxlength="100" placeholder="e.g. Lagos" required>
                         </label>
@@ -954,7 +958,7 @@
                         </label>
                         <button class="button button-primary job-search-submit" type="submit">Search jobs</button>
                     </form>
-                    <p class="job-search-note">Work-arrangement choices are matched only when Jooble's returned listing text identifies the arrangement.</p>
+                    <p class="job-search-note">Enter skills separated by commas to compare them with the selected career's requirements. Use a title from the career catalog for mapped scores. Work-arrangement choices are matched only when Jooble's returned listing text identifies the arrangement.</p>
                     <p class="job-search-status" id="job-search-status" role="status" aria-live="polite"></p>
                     <div class="job-results" id="job-results" aria-live="polite"></div>
                 </div>
@@ -1070,6 +1074,22 @@
             appendJobText(card, "p", job.description, "job-result-description");
             appendJobText(card, "p", job.source, "job-result-meta");
 
+            if (typeof job.match_score === "number" && Number.isFinite(job.match_score)) {
+                appendJobText(card, "p", `Skills match: ${Math.round(job.match_score)}%`, "job-result-meta");
+            }
+            if (Array.isArray(job.matched_skills) && job.matched_skills.length) {
+                const matchedSkills = job.matched_skills.filter((skill) => typeof skill === "string");
+                if (matchedSkills.length) {
+                    appendJobText(card, "p", `Matched skills: ${matchedSkills.join(", ")}`, "job-result-meta");
+                }
+            }
+            if (Array.isArray(job.missing_skills) && job.missing_skills.length) {
+                const missingSkills = job.missing_skills.filter((skill) => typeof skill === "string");
+                if (missingSkills.length) {
+                    appendJobText(card, "p", `Skills to build: ${missingSkills.join(", ")}`, "job-result-meta");
+                }
+            }
+
             if (typeof job.url === "string") {
                 try {
                     const listingUrl = new URL(job.url);
@@ -1109,7 +1129,15 @@
                     return;
                 }
                 if (data.jobs.length === 0) {
-                    jobSearchStatus.textContent = `Jooble returned no listings for ${data.query} in ${data.city}, ${data.country}. This does not confirm that no such jobs exist; try another search or check again later.`;
+                    if (
+                        data.arrangement !== "Any"
+                        && Number.isInteger(data.total_count)
+                        && data.total_count > 0
+                    ) {
+                        jobSearchStatus.textContent = `Jooble reported ${data.total_count} results for ${data.query} in ${data.city}, ${data.country}, but none of the returned listings identified ${data.arrangement} work in the title, location, or description. Choose "Any arrangement" or try another search.`;
+                    } else {
+                        jobSearchStatus.textContent = `Jooble returned no listings for ${data.query} in ${data.city}, ${data.country}. This does not confirm that no such jobs exist; try another search or check again later.`;
+                    }
                     return;
                 }
 

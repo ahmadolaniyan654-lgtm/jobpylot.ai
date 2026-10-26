@@ -9,6 +9,7 @@ import requests
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from backend.career_skills import career_requirements
 from backend.main import (
     app,
     job_search_error_detail,
@@ -297,6 +298,45 @@ class JoobleSearchTests(unittest.TestCase):
             ],
         )
 
+    def test_local_search_matches_user_skills_to_the_selected_career(self) -> None:
+        local_row = (
+            1,
+            "Data Analyst",
+            "Local Test Company",
+            "Lagos",
+            "https://example.invalid/local-listing",
+        )
+        with (
+            patch(
+                "backend.main.requests.post",
+                return_value=self.response(200, {"jobs": []}),
+            ),
+            patch("backend.main.search_local_jobs", return_value=[local_row]),
+        ):
+            response = self.client.get(
+                "/jobs",
+                params=[
+                    ("title", "Data Analyst"),
+                    ("city", "Lagos"),
+                    ("user_skills", "Python, SQL"),
+                ],
+            )
+
+        self.assertEqual(response.status_code, 200)
+        job = response.json()["jobs"][0]
+        self.assertEqual(job["matched_skills"], ["python", "sql"])
+        self.assertEqual(
+            job["missing_skills"],
+            [
+                "excel",
+                "power bi",
+                "tableau",
+                "statistics and probability",
+                "data visualization",
+            ],
+        )
+        self.assertAlmostEqual(job["match_score"], 200 / 7)
+
     def test_local_results_duplicate_of_jooble_are_skipped(self) -> None:
         jooble_listing = {
             "title": "Data Analyst",
@@ -495,7 +535,7 @@ class JoobleSearchTests(unittest.TestCase):
         self.assertTrue(job["potentially_entry_level"])
         self.assertEqual(job["title"], "Junior Data Analyst")
 
-    def test_jobs_endpoint_does_not_infer_required_skills_from_description(self) -> None:
+    def test_jobs_endpoint_uses_career_requirements_without_inferencing_description(self) -> None:
         listing = {
             "title": "Data Analyst",
             "snippet": "Requires Python, SQL, and Power BI experience.",
@@ -517,9 +557,93 @@ class JoobleSearchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         job = response.json()["jobs"][0]
         self.assertEqual(job["description"], listing["snippet"])
-        self.assertNotIn("matched_skills", job)
-        self.assertNotIn("missing_skills", job)
-        self.assertNotIn("match_score", job)
+        self.assertEqual(job["matched_skills"], ["python"])
+        self.assertEqual(
+            job["missing_skills"],
+            [
+                "excel",
+                "sql",
+                "power bi",
+                "tableau",
+                "statistics and probability",
+                "data visualization",
+            ],
+        )
+        self.assertAlmostEqual(job["match_score"], 100 / 7)
+
+    def test_jobs_endpoint_prefers_structured_requirements_over_career_defaults(self) -> None:
+        listing = {
+            "title": "Data Analyst",
+            "required_skills": ["R", "SQL"],
+        }
+
+        with patch(
+            "backend.main.requests.post",
+            return_value=self.response(200, {"jobs": [listing]}),
+        ):
+            response = self.client.get(
+                "/jobs",
+                params={
+                    "title": "Data Analyst",
+                    "country": "Nigeria",
+                    "user_skills": "SQL",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        job = response.json()["jobs"][0]
+        self.assertEqual(job["matched_skills"], ["sql"])
+        self.assertEqual(job["missing_skills"], ["r"])
+        self.assertEqual(job["match_score"], 50)
+
+    def test_all_recent_career_additions_use_their_mapped_requirements(self) -> None:
+        career_titles = (
+            "Frontend Developer",
+            "Backend Developer",
+            "Full-Stack Developer",
+            "Mobile App Developer",
+            "Software Engineer",
+            "DevOps Engineer",
+            "Cloud Engineer",
+            "UI/UX Designer",
+            "Data Scientist",
+            "AI/Machine Learning Engineer",
+            "Database Administrator",
+            "IT Support Specialist",
+            "Network Engineer",
+        )
+
+        for career_title in career_titles:
+            with self.subTest(career_title=career_title):
+                required_skills = career_requirements[career_title]
+                user_skill = required_skills[0]
+                with patch(
+                    "backend.main.requests.post",
+                    return_value=self.response(
+                        200,
+                        {"jobs": [{"title": career_title}]},
+                    ),
+                ):
+                    response = self.client.get(
+                        "/jobs",
+                        params={
+                            "title": career_title,
+                            "country": "Nigeria",
+                            "user_skills": user_skill,
+                        },
+                    )
+
+                self.assertEqual(response.status_code, 200)
+                job = response.json()["jobs"][0]
+                self.assertEqual(job["matched_skills"], [user_skill.lower()])
+                self.assertEqual(
+                    job["missing_skills"],
+                    [skill.lower() for skill in required_skills[1:]],
+                )
+                self.assertAlmostEqual(
+                    job["match_score"],
+                    100 / len(required_skills),
+                )
 
     def test_jobs_endpoint_reports_missing_api_key_as_configuration_error(self) -> None:
         with (

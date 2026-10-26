@@ -7,16 +7,21 @@ from typing import Annotated, Literal
 
 import requests
 from dotenv import load_dotenv
+from pydantic import BaseModel, HttpUrl
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from backend.job_matcher import entry_level, match_job
 from backend.career_skills import career_requirements
-from backend.database import search_jobs as search_local_jobs
+from backend.database import add_job, search_jobs as search_local_jobs
 
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_FILE)
-
+class JobSubmission(BaseModel):
+    title: str
+    company: str
+    city: str
+    application_link: HttpUrl
 app = FastAPI(title="JobPylot AI API")
 
 JOOBLE_API_URL = "https://jooble.org/api"
@@ -43,6 +48,18 @@ def _configured_jooble_api_key() -> str:
         load_dotenv(ENV_FILE, override=True)
         api_key = os.getenv("JOOBLE_API_KEY", "").strip()
     return api_key
+
+
+def _career_skills(career_title: str) -> list[str] | None:
+    normalized_title = career_title.strip().casefold()
+    return next(
+        (
+            skills
+            for career, skills in career_requirements.items()
+            if career.strip().casefold() == normalized_title
+        ),
+        None,
+    )
 
 
 def job_search_error_detail(response: requests.Response) -> str | None:
@@ -77,21 +94,17 @@ def _normalize_job(
     normalized["source"] = "Jooble"
     title = _optional_text(job, "title")
     normalized["potentially_entry_level"] = entry_level(title) if title else False
-    required_skills = job.get('required_skills')
+    required_skills = job.get("required_skills")
     if not isinstance(required_skills, list):
-        required_skills = next((skills for career, skills in career_requirements.items() if career.strip().casefold() == career_title.strip().casefold()), None)
-    if (
-        user_skills
-        and career_title
-        and isinstance(required_skills, list)
-    ):
+        required_skills = _career_skills(career_title)
+    if user_skills and isinstance(required_skills, list):
         required_skills = [
             skill.strip()
             for skill in required_skills
             if isinstance(skill, str) and skill.strip()
         ]
-        if required_skills and isinstance(job.get('required_skills'), list):
-            normalized.update(match_job(title, user_skills, required_skills))
+        if required_skills:
+            normalized.update(match_job(title or "", user_skills, required_skills))
     return normalized
 
 
@@ -110,6 +123,8 @@ def _matches_arrangement(job: Mapping[str, object], arrangement: str) -> bool:
 
 def _normalize_local_job(
     row: tuple[int, str, str | None, str | None, str | None],
+    user_skills: list[str] | None = None,
+    career_title: str = "",
 ) -> dict[str, object]:
     _, title, company, city, application_link = row
     normalized: dict[str, object] = {
@@ -123,6 +138,9 @@ def _normalize_local_job(
         normalized["location"] = city
     if application_link:
         normalized["url"] = application_link
+    required_skills = _career_skills(career_title)
+    if user_skills and required_skills:
+        normalized.update(match_job(title, user_skills, required_skills))
     return normalized
 
 
@@ -245,7 +263,7 @@ def search_jobs(
     user_skills: Annotated[
         list[str] | None,
         Query(
-            description="User skills for matching against structured listing requirements",
+            description="Comma-separated or repeated user skills for career matching",
         ),
     ] = None,
 ) -> dict[str, object]:
@@ -254,7 +272,8 @@ def search_jobs(
     country = country.strip()
     user_skills = [
         skill.strip()
-        for skill in user_skills or []
+        for value in user_skills or []
+        for skill in value.split(",")
         if skill.strip()
     ]
     if not title or not country:
@@ -275,7 +294,7 @@ def search_jobs(
     if city:
         try:
             local_jobs = [
-                _normalize_local_job(row)
+                _normalize_local_job(row, user_skills, title)
                 for row in search_local_jobs(title, city)
             ]
         except sqlite3.Error:
@@ -303,3 +322,27 @@ def search_jobs(
     if total_count is not None:
         result["total_count"] = total_count
     return result
+
+@app.post("/jobs")
+def submit_job(job: JobSubmission):
+    if (
+        not job.title.strip()
+        or not job.company.strip()
+        or not job.city.strip()
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Title, company, and city cannot be empty.",
+        )
+    saved = add_job(
+            job.title.strip(),
+            job.company.strip(),
+        job.city.strip(),
+        str(job.application_link).strip(),
+    )
+    if not saved:
+        raise HTTPException(
+            status_code=409,
+            detail="This job already exists",
+        )
+    return {"message": "Job submitted successfully"}

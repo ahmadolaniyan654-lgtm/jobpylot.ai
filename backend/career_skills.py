@@ -174,5 +174,85 @@ career_requirements = {
         'Reservoir Simulation',
         'Well Engineering',
         'Petroleum Production Systems'
-    ]
+    ],
+    'Frontend Developer' : [
+        'HTML',
+        'CSS',
+        'JavaScript',
+        'React',
+        'responsive design'
+    ],
+    'Backend Developer' : [
+        'APIs',
+        'databases', 
+        'server-side programming',
+        'authentication'
+    ],
+    'Full-Stack Developer': [
+        'Frontend Development',
+        'Backend Development',
+        'databases',
+        'APIs'
+    ],
+    'Mobile App Developer': [
+        'Mobile Development',
+        'app design',
+        'API integration',
+        'testing'
+    ],
+    'Software Engineer': [
+        'Programming',
+        'algorithms',
+        'data structures',
+        'testing'
+    ],
+    'DevOps Engineer' : [
+        'Git',
+        'CI/CD',
+        'Linux',
+        'containers',
+        'cloud tools'
+    ],
+    'Cloud Engineer' : [
+        'Cloud platforms',
+        'networking',
+        'security',
+        'automation'
+    ],
+    'UI/UX Designer' : [
+        'User research',
+        'Wireframing',
+        'prototyping',
+        'usability testing'
+    ],
+    'Data Scientist' : [
+        'Statistics',
+        'Python',
+        'Data Analysis',
+        'Machine Learning'
+    ],
+    'AI/Machine Learning Engineer' :[
+        'Python',
+        'machine learning',
+        'model evaluation',
+        'data processing'
+    ],
+    'Database Administrator': [
+        'SQL',
+        'database security',
+        'backups',
+        'performance tuning',
+    ],
+    'IT Support Specialist' : [
+        'Troubleshooting',
+        'operating systems',
+        'hardware',
+        'user support'
+    ],
+    'Network Engineer' : [
+        'Networking',
+        'routing',
+        'switching',
+        'network security'
+    ],
 }
