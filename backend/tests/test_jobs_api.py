@@ -658,6 +658,112 @@ class JoobleSearchTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertIn("JOOBLE_API_KEY", response.json()["detail"])
 
+    def test_submit_job_successfully(self) -> None:
+        with patch(
+            'backend.main.add_job',
+            return_value= True,
+        ) as add_job:
+            response = self.client.post(
+                '/jobs',
+                json={
+                    'title' : 'python developer',
+                    'company' : 'Tech Company',
+                    'city' : 'Minna',
+                    'application_link' : 'https://example.com/jobs/python',
+                },
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {'message': 'Job submitted successfully'},
+        )
+        add_job.assert_called_once()
+    def test_submit_duplicate_job_returns_conflict(self) -> None:
+        with patch(
+            'backend.main.add_job',
+            return_value = False,
+        ) as add_job:
+            response = self.client.post(
+                '/jobs',
+                json= {
+                    'title' : 'python developer',
+                    'company' :'Tech Company',
+                    'city' : 'Minna',
+                    'application_link' :'https://example.com/jobs/python',
+                }
+            )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(
+            response.json(),
+            {'detail' : 'This job already exists'}
+        )
+        add_job.assert_called_once()
+
+    def test_submit_job_with_empty_title_returns_bad_request(self) -> None:
+        with patch(
+            'backend.main.add_job',
+            return_value = True,
+        ) as add_job:
+            response = self.client.post(
+                '/jobs',
+                json = {
+                    'title' : ' ',
+                    'company' : 'Tech Company',
+                    'city' : 'Minna',
+                    'application_link' : 'https://example.com/jobs/python',
+                }
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {'detail' : 'Title, company, and city cannot be empty.'}
+        )
+        add_job.assert_not_called()
+        
+    def test_submit_job_with_empty_company_returns_bad_request(self) -> None:
+        with patch(
+            'backend.main.add_job',
+            return_value = True,
+        ) as add_job:
+            response = self.client.post(
+                '/jobs',
+                json = {
+                    'title' : 'python developer',
+                    'company' : ' ',
+                    'city' : 'Minna',
+                    'application_link' : 'https://example.com/jobs/python',
+                }
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {'detail' : 'Title, company, and city cannot be empty.'}
+        )
+        add_job.assert_not_called()
+
+    def test_submit_job_with_empty_city_returns_bad_request(self) -> None:
+        with patch(
+            'backend.main.add_job',
+            return_value= True,
+        ) as add_job:
+            response = self.client.post(
+                '/jobs',
+                json = {
+                    'title' : 'python developer',
+                    'company' : 'Tech Company',
+                    'city' : ' ',
+                    'application_link' :'https://example.com/jobs/python',
+                }
+            )
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json(),
+            {'detail' : 'Title, company, and city cannot be empty.'}
+        )
+        add_job.assert_not_called()
+
+
+
 
 if __name__ == "__main__":
     unittest.main()
