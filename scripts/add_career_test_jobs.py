@@ -11,85 +11,30 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from backend.career_skills import career_requirements
 
-
-LEGACY_SAMPLE_DETAILS = {
-    "Data Analyst": ("Lagos", "https://example.invalid/jobpylot-test/listing-01"),
-    "Web Developer": ("Abuja", "https://example.invalid/jobpylot-test/listing-02"),
-    "Python Developer": ("Port Harcourt", "https://example.invalid/jobpylot-test/listing-03"),
-    "Cybersecurity Analyst": ("Ibadan", "https://example.invalid/jobpylot-test/listing-04"),
-    "Financial Accountant": ("Kano", "https://example.invalid/jobpylot-test/listing-05"),
-    "Business Analyst": ("Enugu", "https://example.invalid/jobpylot-test/listing-06"),
-    "Marketing Officer": ("Kaduna", "https://example.invalid/jobpylot-test/listing-07"),
-    "Head of a Company": ("Benin City", "https://example.invalid/jobpylot-test/listing-08"),
-    "Project Manager": ("Jos", "https://example.invalid/jobpylot-test/listing-09"),
-    "Physiotherapist": ("Ilorin", "https://example.invalid/jobpylot-test/listing-10"),
-    "Civil Engineer": ("Abeokuta", "https://example.invalid/jobpylot-test/listing-11"),
-    "Electrical and Electronics Engineer": ("Uyo", "https://example.invalid/jobpylot-test/listing-12"),
-    "Chemical Engineer": ("Owerri", "https://example.invalid/jobpylot-test/listing-13"),
-    "Food Engineer": ("Asaba", "https://example.invalid/jobpylot-test/listing-14"),
-    "Architect": ("Maiduguri", "https://example.invalid/jobpylot-test/listing-15"),
-    "Mechanical Engineer": ("Calabar", "https://example.invalid/jobpylot-test/listing-16"),
-    "Agricultural and Bioresources Engineer": ("Akure", "https://example.invalid/jobpylot-test/listing-17"),
-    "Psychologist": ("Warri", "https://example.invalid/jobpylot-test/listing-18"),
-    "Medical Laboratory Scientist": ("Bauchi", "https://example.invalid/jobpylot-test/listing-19"),
-    "Nurse": ("Sokoto", "https://example.invalid/jobpylot-test/listing-20"),
-    "Teacher/Lecturer": ("Minna", "https://example.invalid/jobpylot-test/listing-21"),
-    "Shop Attendant": ("Onitsha", "https://example.invalid/jobpylot-test/listing-22"),
-    "Cashier": ("Makurdi", "https://example.invalid/jobpylot-test/listing-23"),
-    "Office Assistant": ("Ado-Ekiti", "https://example.invalid/jobpylot-test/listing-24"),
-    "Economist": ("Yenagoa", "https://example.invalid/jobpylot-test/listing-25"),
-    "Petroleum and Gas Engineer": ("Lafia", "https://example.invalid/jobpylot-test/listing-26"),
-}
-
 SAMPLE_CITIES = (
-    "Lagos",
     "Abuja",
-    "Port Harcourt",
+    "Lagos",
+    "Minna",
     "Ibadan",
     "Kano",
-    "Enugu",
-    "Kaduna",
-    "Benin City",
-    "Jos",
-    "Ilorin",
-    "Abeokuta",
-    "Uyo",
-    "Owerri",
-    "Asaba",
-    "Maiduguri",
-    "Calabar",
-    "Akure",
-    "Warri",
-    "Bauchi",
-    "Sokoto",
-    "Minna",
-    "Onitsha",
-    "Makurdi",
-    "Ado-Ekiti",
-    "Yenagoa",
-    "Lafia",
+    "Port Harcourt",
 )
 
 
 def build_samples() -> list[tuple[str, str, str, str]]:
-    samples = []
-    for index, title in enumerate(career_requirements, start=1):
-        city, application_link = LEGACY_SAMPLE_DETAILS.get(
+    return [
+        (
             title,
+            f"JobPylot TEST DATA {career_index:02d}",
+            city,
             (
-                SAMPLE_CITIES[(index - 1) % len(SAMPLE_CITIES)],
-                f"https://example.invalid/jobpylot-test/listing-{index:02d}",
+                "https://example.invalid/jobpylot-test/"
+                f"listing-{career_index:02d}-{city_index:02d}"
             ),
         )
-        samples.append(
-            (
-                title,
-                f"JobPylot TEST DATA {index:02d}",
-                city,
-                application_link,
-            )
-        )
-    return samples
+        for career_index, title in enumerate(career_requirements, start=1)
+        for city_index, city in enumerate(SAMPLE_CITIES, start=1)
+    ]
 
 
 def seed_jobs(db_path: Path) -> tuple[int, int]:
@@ -119,10 +64,12 @@ def seed_jobs(db_path: Path) -> tuple[int, int]:
                 existing = conn.execute(
                     """
                     SELECT 1 FROM jobs
-                    WHERE title = ? AND company = ? AND city = ? AND application_link = ?
+                    WHERE LOWER(title) = LOWER(?)
+                    AND LOWER(company) = LOWER(?)
+                    AND LOWER(city) = LOWER(?)
                     LIMIT 1
                     """,
-                    sample,
+                    sample[:3],
                 ).fetchone()
 
                 if existing is None:
@@ -143,7 +90,7 @@ def seed_jobs(db_path: Path) -> tuple[int, int]:
 
 def main() -> None:
     inserted, skipped = seed_jobs(DB_PATH)
-    print(f"Inserted {inserted} listings; skipped {skipped} exact matches.")
+    print(f"Inserted {inserted} listings; skipped {skipped} existing career/city listings.")
 
 
 if __name__ == "__main__":

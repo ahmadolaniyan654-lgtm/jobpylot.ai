@@ -346,3 +346,4 @@ def submit_job(job: JobSubmission):
             detail="This job already exists",
         )
     return {"message": "Job submitted successfully"}
+
