@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jobpylot AI</title>
+</head>
+<body>
+    <h1>Welcome to Jobpylot AI</h1>
+    <p>Find jobs and grow your career.</p>
+    <h2>Jobpylot Users</h2>
+    <ul>
+        {% for a in my_job_listings %}
+          <li>{{a.firstname }} {{a.lastname}}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
