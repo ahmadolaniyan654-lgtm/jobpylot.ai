@@ -1,0 +1,19 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Jobpylot AI
+{% endblock %}
+
+{% block content %}
+  <h1>Welcome to Jobpylot AI</h1>
+
+  <h3>Your Career, Your Future</h3>
+  <p>Find jobs and grow your career.</p>
+  <h2>Career options</h2>
+  <ul>
+    {% for career in careers %}
+      <li>{{ career }}</li>
+    {% endfor %}
+  </ul>
+  <p>Explore our <a href= "/jobs/">users</a></p>
+{% endblock %}

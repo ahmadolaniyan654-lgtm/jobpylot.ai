@@ -19,6 +19,9 @@ from django.urls import path
 from job_listings import views
 
 urlpatterns = [
+    path('', views.main, name='main'),
     path('admin/', admin.site.urls),
-    path('jobs/', views.job_list, name= 'job_list'),
+    path('jobs/', views.job_list, name='job_list'),
+    path('my_job_listings/details/<int:id>/', views.details, name='details'),
+    path('testing/', views.testing, name='testing'),
 ]

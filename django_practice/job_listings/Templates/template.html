@@ -1,0 +1,13 @@
+{% extends "master.html" %}
+
+{% block title %}
+    JobPylot AI Careers
+{% endblock %}
+
+{% block content %}
+    <h1>JobPylot AI Careers</h1>
+
+    {% for c in careers %}
+        <h2>{{ c }}</h2>
+    {% endfor %}
+{% endblock %}

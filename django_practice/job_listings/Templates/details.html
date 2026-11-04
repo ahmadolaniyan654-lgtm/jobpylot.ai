@@ -1,4 +1,12 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Jobpylot User Details</title>
+{% extends "master.html" %}
+
+{% block title %}
+Jobpylot Users Details 
+{% endblock %}
+
+{% block content %}
+<h1>{{ mymember.firstname }} {{ mymember.lastname }}</h1>
+<p>Phone: {{ mymember.phone }}</p>
+<p>Email: {{ mymember.email }}</p>
+<p>Back to <a href= "/jobs/">Jobpylot Users</a></p>
+{% endblock %}

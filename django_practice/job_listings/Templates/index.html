@@ -1,17 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Jobpylot AI</title>
-</head>
-<body>
-    <h1>Welcome to Jobpylot AI</h1>
-    <p>Find jobs and grow your career.</p>
-    <h2>Jobpylot Users</h2>
+{% extends "master.html" %}
+
+{% block title %}
+    Jobpylot AI - List of Users
+{% endblock %}
+
+{% block content %}
+
+    <p><a href= "/">HOME</a></p>
+    <h1>Jobpylot AI Users</h1>
+
     <ul>
         {% for a in my_job_listings %}
-          <li>{{a.firstname }} {{a.lastname}}</li>
+        <li>
+            <a href="/my_job_listings/details/{{ a.id }}">
+                {{ a.firstname }} {{ a.lastname }}
+            </a>
+        </li>
         {% endfor %}
     </ul>
-</body>
-</html>
-
+    {% endblock %}
