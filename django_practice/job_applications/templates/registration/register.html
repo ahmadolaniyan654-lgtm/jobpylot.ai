@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register | Jobpylot AI</title>
+</head>
+<body>
+    <h1>Create Your Jobpylot AI Account</h1>
+    <form method="POST">
+       {% csrf_token %}
+       {{form.as_p }}
+       <button type="Submit">Create Account</button>
+    </form>
+</body>
+</html>

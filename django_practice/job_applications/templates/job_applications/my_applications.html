@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Job Applications</title>
+</head>
+<body>
+    <h1>My Job Applications</h1>
+    <form method="POST" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit">Logout</button>
+    </form>
+
+    {% for application in applications %}
+      <p>Job: {{ application.job_title }}</p>
+      <p>Company: {{ application.company }}</p>
+      <p>Status: {{ application.status }}</p>
+
+      {% if application.status == 'pending' %}
+        <form method="POST" action="{% url 'approve_application' application.id %}">
+            {% csrf_token %}
+            <button type="submit">Approve</button>
+        </form>
+
+        <form method="POST" action="{% url 'reject_application' application.id %}">
+            {% csrf_token %}
+            <button type="submit">Reject</button>
+        </form>
+    {% endif %}
+      {% if application.status == 'approved' %}
+        <form method="POST" action="{% url 'submit_application' application.id %}">
+            {% csrf_token %}
+            <button type="submit">Submit Application</button>
+        </form>
+    {% endif %}
+
+    <hr>
+   {% empty %}
+      <p>You have no job applications yet.</p>
+    {% endfor %}
+
+</body>
+</html>
