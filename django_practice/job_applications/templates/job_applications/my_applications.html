@@ -13,8 +13,16 @@
     {% for application in applications %}
       <p>Job: {{ application.job_title }}</p>
       <p>Company: {{ application.company }}</p>
+      <p>Job URL: <a href="{{ application.job_url }}">{{ application.job_url }}</a></p>
       <p>Status: {{ application.status }}</p>
-
+      {% if application.status == 'saved' %}
+          <form method="POST" action="{% url 'start_application' application.id %}">
+              {% csrf_token %}
+              <button type="submit">Start Application</button>
+          </form>
+      {% endif %}
+      <p>Application Date: {{ application.created_at|date:"F j, Y"}}</p>
+      <p>Last Updated: {{ application.updated_at|date:"F j, Y" }}</p>
       {% if application.status == 'pending' %}
         <form method="POST" action="{% url 'approve_application' application.id %}">
             {% csrf_token %}

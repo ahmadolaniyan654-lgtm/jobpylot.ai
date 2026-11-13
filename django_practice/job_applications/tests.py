@@ -17,7 +17,7 @@ class JobApplicationModelTest(TestCase):
             cover_letter='I am interested in this Python Developer position.'
         )
         self.assertEqual(application.job_title, 'Python Developer')
-        self.assertEqual(application.status, 'pending')
+        self.assertEqual(application.status, 'saved')
         self.assertEqual(str(application), 'Python Developer at Tech Solutions')
     def test_application_rejection(self):
         user = User.objects.create_user(
@@ -80,6 +80,8 @@ class JobApplicationModelTest(TestCase):
             job_url= 'https://example.com/jobs/python-developer',
             cover_letter= 'I am interested in this position.'
         )
+        application.status = 'pending'
+        application.save()
         with self.assertRaises(ValueError):
             application.submit_application()
     def test_approved_application_can_be_submitted(self):
@@ -117,6 +119,34 @@ class JobApplicationViewTest(TestCase):
             job_url= 'https://example.com/jobs/python',
             cover_letter='I am interested in this position.'
         )
+        self.application.status = 'pending'
+        self.application.save()
+
+    def test_start_application(self):
+        self.client.force_login(self.user)
+        self.application.status = 'saved'
+        self.application.save()
+
+        response = self.client.post(
+            reverse('start_application', args=[self.application.pk])
+        )
+
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'pending')
+        self.assertRedirects(response, reverse('my_applications'))
+
+    def test_other_user_cannot_start_application(self):
+        self.client.force_login(self.other_user)
+        self.application.status = 'saved'
+        self.application.save()
+
+        response = self.client.post(
+            reverse('start_application', args=[self.application.pk])
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'saved')
 
     def test_approve_application(self):
         self.client.force_login(self.user)

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 STATUS_CHOICES= [
+    ('saved', 'Saved'),
     ('pending', 'Pending'),
     ('approved', 'Approved'),
     ('rejected', 'Rejected'),
@@ -15,7 +16,7 @@ class JobApplication(models.Model):
     company= models.CharField(max_length=200)
     job_url= models.URLField()
     cover_letter = models.TextField()
-    status = models.CharField(max_length=20, choices= STATUS_CHOICES, default= 'pending')
+    status = models.CharField(max_length=20, choices= STATUS_CHOICES, default= 'saved')
     created_at= models.DateTimeField(auto_now_add=True)
     updated_at= models.DateTimeField(auto_now=True)
 

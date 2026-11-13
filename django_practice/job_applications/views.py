@@ -19,6 +19,20 @@ def create_application(request):
     return render(request, 'job_applications/create_application.html', {
             'form' : form
         })
+
+@login_required
+def start_application(request, application_id):
+    if request.method == 'POST' :
+        application = get_object_or_404(
+            JobApplication,
+            id=application_id,
+            applicant=request.user
+        )
+        if application.status == 'saved':
+            application.status = 'pending'
+            application.save()
+    return redirect('my_applications')
+
 @login_required
 def approve_application(request, application_id):
     if request.method == 'POST' :
@@ -55,4 +69,4 @@ def submit_application(request, application_id):
         )
         if application.status == 'approved':
             application.submit_application()
-    return redirect(my_applications)
+    return redirect('my_applications')
