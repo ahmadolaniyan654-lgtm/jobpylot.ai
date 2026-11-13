@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
 from django.core import mail
+from .models import UserProfile
 import re
 
 class RegistrationTests(TestCase):
@@ -16,6 +17,7 @@ class RegistrationTests(TestCase):
           response= self.client.post('/accounts/register/', user_data)
           self.assertRedirects(response, '/accounts/login/')
           self.assertTrue(User.objects.filter(username='testuser').exists())
+          self.assertEqual(UserProfile.objects.filter(user__username='testuser').count(), 1)
      def test_registration_fails_when_passwords_dont_match(self):
           user_data = {
                'username' : 'testuser',

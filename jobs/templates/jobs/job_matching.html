@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Job Matches</title>
+</head>
+<body>
+    <h1>Your Job Matches</h1>
+    {% if results %}
+    {% for result in results %}
+       <h2>{{ result.job.title }}</h2>
+       <p>{{ result.job.company_name }}</p>
+       <a href="{% url 'job_detail' result.job.id %}">View Job Details</a>
+       <p>{{ result.match_info.match_score|floatformat:1 }}%</p>
+       <p>Matched Skills:</p>
+       <ul>
+            {% for skill in result.match_info.matched_skills %}
+                 <li>{{ skill }}</li>
+            {% endfor %}
+       </ul>
+       <p>Missing Skills:</p>
+       <ul>
+            {% for skill in result.match_info.missing_skills %}
+                 <li>{{ skill }}</li>
+            {% endfor %}
+       </ul>
+    {% endfor %}
+   {% else %}
+        <p>No job matches found yet. Try updating your profile skills or preferred career.</p>
+    {% endif %}
+    
+</body>
+</html>

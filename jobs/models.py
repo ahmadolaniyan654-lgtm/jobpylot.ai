@@ -38,4 +38,12 @@ class Job(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.title
-# Create your models here.
+
+
+class CareerRequirement(models.Model):
+    career_title= models.CharField(max_length=255, unique= True)
+    required_skills= models.TextField()
+    created_at= models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.career_title

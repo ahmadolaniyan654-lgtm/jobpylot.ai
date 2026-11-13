@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Your Profile</title>
+</head>
+<body>
+    <h1>Edit Your Profile</h1>
+    <p>Profile Completion: {{ completion_percentage }}%</p>
+    <div style="width: 100%; background-color: #ddd; border-radius: 10px;">
+        <div style="width: {{ completion_percentage }}%; background-color: green; height: 12px; border-radius: 10px;">
+        </div>
+    </div>
+    {% if completion_percentage < 50 %}
+        <p>Keep going! You are doing great!</p>
+    {% elif completion_percentage < 100 %}
+        <p>You're almost there!</p>
+    {% else %}
+        <p>Your profile is complete!</p>
+    {% endif %}
+    <form method="POST" action="">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+        <button type="submit">Save Changes</button>
+    </form>
+</body>
+</html>

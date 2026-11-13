@@ -27,4 +27,6 @@ urlpatterns = [
     path('applications/', include('job_applications.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('accounts.urls')),
+    path('job-matching/', include('jobs.urls')),
+    
 ]
