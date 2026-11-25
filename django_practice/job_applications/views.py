@@ -1,11 +1,47 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+
+
 from .models import JobApplication
-from .forms import JobApplicationForm
+from .forms import JobApplicationForm, InternalJobApplicationForm
+from jobs.models import Job
 @login_required
 def my_applications(request):
     applications= JobApplication.objects.filter(applicant=request.user)
-    return render(request, 'job_applications/my_applications.html', {'applications': applications})
+    total_applications= applications.count()
+    total_saved= applications.filter(status='saved').count()
+    total_pending= applications.filter(status='pending').count()
+    total_approved= applications.filter(status= 'approved').count()
+    total_rejected= applications.filter(status= 'rejected').count()
+    total_submitted= applications.filter(status= 'submitted').count()
+    return render(request, 'job_applications/my_applications.html',{
+        'applications' : applications,
+        'total_applications' : total_applications,
+        'total_saved' : total_saved,
+        'total_pending' : total_pending,
+        'total_approved' : total_approved,
+        'total_rejected' : total_rejected,
+        'total_submitted' : total_submitted
+    })
+@login_required
+def dashboard(request):
+    applications= JobApplication.objects.filter(applicant=request.user)
+    total_applications= applications.count()
+    total_saved= applications.filter(status='saved').count()
+    total_approved= applications.filter(status='approved').count()
+    total_pending= applications.filter(status='pending').count()
+    total_rejected= applications.filter(status='rejected').count()
+    total_submitted= applications.filter(status='submitted').count()
+    recent_applications= applications.order_by('-created_at')[:3]
+    return render(request, 'job_applications/dashboard.html', {
+        'total_applications': total_applications,
+        'total_saved': total_saved,
+        'total_pending': total_pending,
+        'total_approved': total_approved,
+        'total_rejected': total_rejected,
+        'total_submitted': total_submitted,
+        'recent_applications' : recent_applications
+    })
 @login_required
 def create_application(request):
     form= JobApplicationForm()
@@ -17,9 +53,32 @@ def create_application(request):
             application.save()
             return redirect('my_applications')
     return render(request, 'job_applications/create_application.html', {
-            'form' : form
+            'form' : form,
         })
-
+@login_required
+def apply_to_job(request, job_id):
+    job= get_object_or_404(
+        Job,
+        id=job_id,
+        application_method='internal'
+    )
+    if request.method == 'POST':
+        form= InternalJobApplicationForm(request.POST)
+        if form.is_valid():
+            application= form.save(commit=False)
+            application.applicant= request.user
+            application.job= job
+            application.job_title= job.title
+            application.company= job.company_name
+            application.job_url= job.application_url
+            application.save()
+            return redirect('my_applications')
+    else:
+        form= InternalJobApplicationForm()
+    return render(request, 'job_applications/apply_to_job.html', {
+        'form' : form,
+        'job' : job
+    })
 @login_required
 def start_application(request, application_id):
     if request.method == 'POST' :

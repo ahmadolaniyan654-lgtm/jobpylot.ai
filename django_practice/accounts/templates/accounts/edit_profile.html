@@ -5,6 +5,11 @@
 </head>
 <body>
     <h1>Edit Your Profile</h1>
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
     <p>Profile Completion: {{ completion_percentage }}%</p>
     <div style="width: 100%; background-color: #ddd; border-radius: 10px;">
         <div style="width: {{ completion_percentage }}%; background-color: green; height: 12px; border-radius: 10px;">

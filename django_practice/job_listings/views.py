@@ -1,4 +1,6 @@
-from django.http import HttpResponse
+from django.conf import settings
+from django.http import FileResponse, HttpResponse
+from django.shortcuts import get_object_or_404
 from django.template import loader
 from .models import job_listing
 
@@ -54,15 +56,18 @@ def job_list(request):
     }
     return HttpResponse(template.render(context, request))
 def details(request, id):
-    my_job_listing= job_listing.objects.get(id=id)
+    my_job_listing = get_object_or_404(job_listing, id=id)
     template= loader.get_template('details.html')
     context= {
         'mymember' : my_job_listing,
     }
     return HttpResponse(template.render(context, request))
 def main(request):
-    template = loader.get_template('main.html')
-    return HttpResponse(template.render({'careers': CAREERS}, request))
+    homepage = settings.BASE_DIR.parent / "backend" / "templates" / "index.html"
+    return FileResponse(
+        homepage.open("rb"),
+        content_type="text/html; charset=utf-8",
+    )
 
 
 def testing(request):

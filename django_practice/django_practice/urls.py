@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from job_listings import views
+from jobs import views as jobs_views
 
 urlpatterns = [
     path('', views.main, name='main'),
     path('admin/', admin.site.urls),
+    path('jobs', jobs_views.homepage_job_search, name='homepage_job_search'),
     path('jobs/', views.job_list, name='job_list'),
     path('my_job_listings/details/<int:id>/', views.details, name='details'),
     path('testing/', views.testing, name='testing'),
@@ -28,5 +30,4 @@ urlpatterns = [
     path('accounts/', include('django.contrib.auth.urls')),
     path('accounts/', include('accounts.urls')),
     path('job-matching/', include('jobs.urls')),
-    
 ]

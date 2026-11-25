@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Apply for {{ job.title }} | JobPylot AI</title>
+</head>
+<body>
+    <h1>Apply for {{ job.title }}</h1>
+    <h2>Company name: {{ job.company_name }}</h2>
+    <h3>Job Location: {{ job.job_location }}</h3>
+    <h3>Job Arrangement: {{ job.arrangement }}</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit Application</button>
+    </form>
+</body>
+</html>

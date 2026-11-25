@@ -927,7 +927,7 @@
                 <div class="section-heading">
                     <p class="eyebrow">Explore current opportunities</p>
                     <h2 id="jobs-title">Search jobs by title and city</h2>
-                    <p>Search Jooble listings for your chosen role and location. Results depend on what Jooble currently returns.</p>
+                    <p>Search current listings for your chosen role and location. Results depend on the job data available to JobPylot AI.</p>
                 </div>
                 <div class="job-search-panel">
                     <form class="job-search-form" id="job-search-form">
@@ -958,7 +958,7 @@
                         </label>
                         <button class="button button-primary job-search-submit" type="submit">Search jobs</button>
                     </form>
-                    <p class="job-search-note">Enter skills separated by commas to compare them with the selected career's requirements. Use a title from the career catalog for mapped scores. Work-arrangement choices are matched only when Jooble's returned listing text identifies the arrangement.</p>
+                    <p class="job-search-note">Enter skills separated by commas to compare them with the selected career's requirements. Use a title from the career catalog for mapped scores. Work-arrangement results depend on the details available for each listing.</p>
                     <p class="job-search-status" id="job-search-status" role="status" aria-live="polite"></p>
                     <div class="job-results" id="job-results" aria-live="polite"></div>
                 </div>
@@ -1114,7 +1114,7 @@
             const submitButton = jobSearchForm.querySelector("button[type='submit']");
             const params = new URLSearchParams(new FormData(jobSearchForm));
             jobResults.replaceChildren();
-            jobSearchStatus.textContent = "Searching Jooble...";
+            jobSearchStatus.textContent = "Searching available jobs...";
             submitButton.disabled = true;
 
             try {
@@ -1125,7 +1125,7 @@
                     return;
                 }
                 if (!Array.isArray(data.jobs)) {
-                    jobSearchStatus.textContent = "Jooble returned an unexpected response. Please try again later.";
+                    jobSearchStatus.textContent = "Job search returned an unexpected response. Please try again later.";
                     return;
                 }
                 if (data.jobs.length === 0) {
@@ -1134,14 +1134,14 @@
                         && Number.isInteger(data.total_count)
                         && data.total_count > 0
                     ) {
-                        jobSearchStatus.textContent = `Jooble reported ${data.total_count} results for ${data.query} in ${data.city}, ${data.country}, but none of the returned listings identified ${data.arrangement} work in the title, location, or description. Choose "Any arrangement" or try another search.`;
+                        jobSearchStatus.textContent = `JobPylot AI has ${data.total_count} matching listings for ${data.query} in ${data.city}, ${data.country}, but none meet the ${data.arrangement} filter. Choose "Any arrangement" or try another search.`;
                     } else {
-                        jobSearchStatus.textContent = `Jooble returned no listings for ${data.query} in ${data.city}, ${data.country}. This does not confirm that no such jobs exist; try another search or check again later.`;
+                        jobSearchStatus.textContent = `No current listings match ${data.query} in ${data.city}, ${data.country}. Try another search or check again later.`;
                     }
                     return;
                 }
 
-                jobSearchStatus.textContent = `Jooble returned ${data.jobs.length} listing${data.jobs.length === 1 ? "" : "s"}.`;
+                jobSearchStatus.textContent = `Found ${data.jobs.length} matching listing${data.jobs.length === 1 ? "" : "s"}.`;
                 jobResults.replaceChildren(...data.jobs.map(renderJob));
             } catch {
                 jobSearchStatus.textContent = "Could not reach the job search service. Check your connection and try again.";

@@ -18,6 +18,20 @@ class JobMatcherTests(unittest.TestCase):
     def test_ordinary_title_is_not_marked_entry_level(self) -> None:
         self.assertFalse(entry_level("  Senior Data Analyst  "))
 
+    def test_entry_level_detection_does_not_match_inside_other_words(self) -> None:
+        self.assertFalse(entry_level("International Sales Director"))
+
+    def test_duplicate_skills_do_not_inflate_match_score(self) -> None:
+        result = match_job(
+            "Data Analyst",
+            ["Python", " python ", "SQL"],
+            ["Python", "SQL"],
+        )
+
+        self.assertEqual(result["matched_skills"], ["python", "sql"])
+        self.assertEqual(result["missing_skills"], [])
+        self.assertEqual(result["match_score"], 100)
+
     def test_match_job_preserves_skill_results_for_both_title_types(self) -> None:
         cases = (
             ("  Junior Data Analyst ", True),

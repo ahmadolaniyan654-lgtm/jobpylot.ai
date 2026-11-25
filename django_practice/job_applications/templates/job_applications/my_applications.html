@@ -1,24 +1,88 @@
 <!DOCTYPE html>
 <html>
 <head>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'job_applications/style.css' %}">
     <title>My Job Applications</title>
 </head>
 <body>
-    <h1>My Job Applications</h1>
+<div class="dashboard-layout">
+    <aside class="sidebar">
+        <h2>JobPylot AI</h2>
+
+        <nav>
+            <a href="{% url 'dashboard' %}">
+    🏠 Dashboard
+</a>
+            <a href="{% url 'job_matching' %}">
+                💼Find Jobs
+            </a>
+            <a href="{% url 'my_applications' %}" class="active">
+                📋My Applications
+            </a>
+            <a href="{% url 'create_application' %}">
+                ➕New Application
+            </a>
+            <a href="{% url 'edit_profile' %}">
+                👤Edit Profile
+            </a>
+        </nav>
+    </aside>
+
+    <main class="dashboard-content">
+
+    <div class="welcome-section">
+        <h1>Welcome back!</h1>
+        <p>Here's an overview of your job application activity.</p>
+    </div>
+    <h2>Application Summary</h2>
+
+    <div class="summary-container">
+        <div class="summary-card total-card">
+            <h3>Total Applications</h3>
+            <p>{{ total_applications }}</p>
+        </div>
+
+        <div class="summary-card saved-card">
+            <h3>Saved</h3>
+            <p>{{ total_saved }}</p>
+        </div>
+
+        <div class="summary-card pending-card">
+            <h3>Pending</h3>
+            <p>{{ total_pending }}</p>
+        </div>
+
+        <div class="summary-card approved-card">
+            <h3>Approved</h3>
+            <p>{{ total_approved }}</p>
+        </div>
+
+        <div class="summary-card rejected-card">
+            <h3>Rejected</h3>
+            <p>{{ total_rejected }}</p>
+        </div>
+
+        <div class="summary-card submitted-card">
+            <h3>Submitted</h3>
+            <p>{{ total_submitted }}</p>
+        </div>
+    </div>
     <form method="POST" action="{% url 'logout' %}">
         {% csrf_token %}
-        <button type="submit">Logout</button>
+        <button type="submit" class="logout-btn">Logout</button>
     </form>
 
     {% for application in applications %}
-      <p>Job: {{ application.job_title }}</p>
+    <div class="application-card">
+      <h3>{{ application.job_title }}</h3>
       <p>Company: {{ application.company }}</p>
       <p>Job URL: <a href="{{ application.job_url }}">{{ application.job_url }}</a></p>
-      <p>Status: {{ application.status }}</p>
+      <p class="status {{ application.status }}">Status: {{ application.status|title }}</p>
       {% if application.status == 'saved' %}
           <form method="POST" action="{% url 'start_application' application.id %}">
               {% csrf_token %}
-              <button type="submit">Start Application</button>
+              <button type="submit" class="start-btn">Start Application</button>
           </form>
       {% endif %}
       <p>Application Date: {{ application.created_at|date:"F j, Y"}}</p>
@@ -26,25 +90,28 @@
       {% if application.status == 'pending' %}
         <form method="POST" action="{% url 'approve_application' application.id %}">
             {% csrf_token %}
-            <button type="submit">Approve</button>
+            <button type="submit" class="approve-btn">Approve</button>
         </form>
 
         <form method="POST" action="{% url 'reject_application' application.id %}">
             {% csrf_token %}
-            <button type="submit">Reject</button>
+            <button type="submit" class="reject-btn">Reject</button>
         </form>
     {% endif %}
       {% if application.status == 'approved' %}
         <form method="POST" action="{% url 'submit_application' application.id %}">
             {% csrf_token %}
-            <button type="submit">Submit Application</button>
+            <button type="submit" class="submit-btn">Submit Application</button>
         </form>
     {% endif %}
 
     <hr>
+    </div>
    {% empty %}
       <p>You have no job applications yet.</p>
     {% endfor %}
+    </main>
+</div>
 
 </body>
 </html>

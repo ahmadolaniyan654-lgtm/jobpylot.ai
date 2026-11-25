@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <title>JobPylot AI| Dashboard</title>
+    <link rel="stylesheet" href="{% static 'job_applications/style.css' %}">
+</head>
+<body>
+
+    <div class="dashboard-layout">
+
+        <aside class="sidebar">
+            <h2>JobPylot AI</h2>
+            <nav>
+                <a href="{% url 'dashboard' %}" class="active">🏠 Dashboard</a>
+                <a href="{% url 'job_matching' %}">💼 Find Jobs</a>
+                <a href="{% url 'my_applications' %}">📋 My Applications</a>
+                <a href="{% url 'create_application' %}">➕ New Application</a>
+                <a href="{% url 'edit_profile' %}">👤 Edit Profile</a>
+            </nav>
+        </aside>
+<main class="dashboard-content">
+    <section class="welcome-section">
+        <h1>Welcome to JobPylot AI</h1>
+        <p>Track your career progress and manage your job search in one place.</p>
+    </section>
+
+    <section class="application-summary">
+        <h2>Application Summary</h2>
+
+        <div class="summary-container">
+            <div class="summary-card total-card">
+                <h3>Total Applications</h3>
+                <p>{{ total_applications }}</p>
+            </div>
+
+            <div class="summary-card saved-card">
+                <h3>Saved</h3>
+                <p>{{ total_saved }}</p>
+            </div>
+
+            <div class="summary-card pending-card">
+                <h3>Pending</h3>
+                <p>{{ total_pending }}</p>
+            </div>
+
+            <div class="summary-card approved-card">
+                <h3>Approved</h3>
+                <P>{{ total_approved }}</P>
+            </div>
+
+            <div class="summary-card rejected-card">
+                <h3>Rejected</h3>
+                <p>{{ total_rejected }}</p>
+            </div>
+
+            <div class="summary-card submitted-card">
+                <h3>Submitted</h3>
+                <p>{{ total_submitted }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="quick-actions">
+        <h2>Quick Actions</h2>
+
+        <div class="quick-actions-container">
+            <div class="quick-action-card">
+            <h3>Find Jobs</h3>
+            <p>Discover job opportunities that match your skills.</p>
+            <a href="{% url 'job_matching' %}">Explore Jobs</a>
+        </div>
+
+        <div class="quick-action-card">
+            <h3>New Application</h3>
+            <p>Create and manage a new job application.</p>
+            <a href="{% url 'create_application' %}">Get Started</a>
+        </div>
+
+        <div class="quick-action-card">
+            <h3>My Applications</h3>
+            <p>Track your applications and their progress.</p>
+            <a href="{% url 'my_applications' %}">View Applications</a>
+        </div>
+
+        <div class="quick-action-card">
+            <h3>Edit Profile</h3>
+            <p>Update your skills and career information.</p>
+            <a href="{% url 'edit_profile' %}">Update Profile</a>
+        </div>
+        </div>
+    </section>
+
+    <section class="recent-applications">
+        <h2>Recent Applications</h2>
+        {% for application in recent_applications %}
+        <article class="application-card">
+            <h3>{{ application.job_title }}</h3>
+            <p>{{ application.company }}</p>
+            <p class="status {{ application.status }}">{{ application.status|title }}</p>
+        </article>
+        {% empty %}
+        <p>You have no applications yet.</p>
+        {% endfor %}
+        <a href="{% url 'my_applications' %}">View all applications</a>
+    </section>
+</main>
+</div>
+</body>
+</html>

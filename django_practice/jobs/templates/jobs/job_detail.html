@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Job Details</title>
+</head>
+<body>
+    <h1>Job Details</h1>
+    <h2>{{ job.title }}</h2>
+    <p>{{ job.company_name }}</p>
+    <p>{{ job.job_description }}</p>
+    <p>{{ job.job_location }}</p>
+    <p>{{ job.country }}</p>
+    <p>{{ job.arrangement }}</p>
+    {% if job.application_method == 'internal' %}
+       <p><a href="{% url 'apply_to_job' job_id=job.id %}">Apply Now</a></p>
+    {% elif job.application_method == 'external' and job.application_url %}
+       <p><a href="{{ job.application_url }}">Visit Application Page</a></p>
+    {% endif %}
+    <a href="{% url 'job_matching' %}">Back to Job Matches</a>
+</body>
+</html>

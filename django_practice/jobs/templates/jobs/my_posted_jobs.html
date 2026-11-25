@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Posted Jobs | JobPylot AI</title>
+</head>
+<body>
+    <h1>My Posted Jobs</h1>
+    <ul>
+        {% for job in jobs %}
+            <li>
+                <a href="{% url 'job_detail' job_id=job.id %}">
+                    {{ job.title }}
+                </a>
+                <span>{{ job.company_name }}</span>
+                <span>{{ job.job_location }}</span>
+                <span>{{ job.arrangement }}</span>
+                <a href="{% url 'edit_job' job_id=job.id %}">Edit Job</a>
+
+                <a href="{% url 'delete_job' job_id=job.id %}">Delete Job</a>
+            </li>
+            {% empty %}
+                <li>No jobs posted yet.</li>
+            {% endfor %}
+    </ul>
+</body>
+</html>

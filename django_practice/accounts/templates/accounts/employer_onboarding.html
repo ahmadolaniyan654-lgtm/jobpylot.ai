@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Your Company Profile</title>
+</head>
+<body>
+    <h1>Create Your Company Profile</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p>{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    <form method="POST" action="">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">Save Company Profile</button>
+    </form>
+</body>
+</html>
