@@ -1,7 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-
-
+from django.views.decorators.http import require_POST
 from .models import JobApplication
 from .forms import JobApplicationForm, InternalJobApplicationForm
 from jobs.models import Job
@@ -80,6 +79,7 @@ def apply_to_job(request, job_id):
         'job' : job
     })
 @login_required
+@require_POST
 def start_application(request, application_id):
     if request.method == 'POST' :
         application = get_object_or_404(
@@ -93,6 +93,7 @@ def start_application(request, application_id):
     return redirect('my_applications')
 
 @login_required
+@require_POST
 def approve_application(request, application_id):
     if request.method == 'POST' :
         application= get_object_or_404(
@@ -106,6 +107,7 @@ def approve_application(request, application_id):
     return redirect('my_applications')
 
 @login_required
+@require_POST
 def reject_application(request, application_id):
     if request.method == 'POST' :
         application= get_object_or_404(
@@ -119,6 +121,7 @@ def reject_application(request, application_id):
     return redirect('my_applications')
 
 @login_required
+@require_POST
 def submit_application(request, application_id):
     if request.method == 'POST':
         application= get_object_or_404(
@@ -129,3 +132,62 @@ def submit_application(request, application_id):
         if application.status == 'approved':
             application.submit_application()
     return redirect('my_applications')
+
+@login_required
+def employer_applications(request, job_id):
+        job= get_object_or_404(
+            Job,
+            id=job_id,
+            employer__user= request.user
+        )
+        applications= JobApplication.objects.filter(
+            job=job,
+            status__in=['submitted', 'under_review']
+        )
+        return render(request, 'job_applications/employer_applications.html', {
+            'job' : job,
+            'applications' : applications
+        })
+@login_required
+@require_POST
+def employer_mark_under_review(request, application_id):
+    if request.method == 'POST':
+        application= get_object_or_404(
+            JobApplication,
+            id=application_id,
+            job__employer__user=request.user,
+            status= 'submitted'
+        )
+
+        application.status='under_review'
+        application.save()
+        return redirect('employer_applications', job_id= application.job.id)
+@login_required
+@require_POST
+def employer_accept_application(request, application_id):
+    if request.method == 'POST':
+        application= get_object_or_404(
+            JobApplication,
+            id=application_id,
+            job__employer__user=request.user,
+            status__in=['submitted', 'under_review']
+        )
+
+        application.status= 'employer_accepted'
+        application.save()
+        return redirect('employer_applications', job_id= application.job.id)
+
+@login_required
+@require_POST
+def employer_reject_application(request, application_id):
+    if request.method == 'POST':
+        application= get_object_or_404(
+            JobApplication,
+            id= application_id,
+            job__employer__user=request.user,
+            status__in=['submitted', 'under_review']
+        )
+
+        application.status= 'employer_rejected'
+        application.save()
+        return redirect('employer_applications', job_id=application.job.id)

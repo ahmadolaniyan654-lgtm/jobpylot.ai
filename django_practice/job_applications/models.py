@@ -7,6 +7,9 @@ STATUS_CHOICES= [
     ('approved', 'Approved'),
     ('rejected', 'Rejected'),
     ('submitted', 'Submitted'),
+    ('under_review', 'Under Review'),
+    ('employer_accepted', 'Employer Accepted'),
+    ('employer_rejected', 'Employer Rejected'),
 ]
 class JobApplication(models.Model):
     job= models.ForeignKey(

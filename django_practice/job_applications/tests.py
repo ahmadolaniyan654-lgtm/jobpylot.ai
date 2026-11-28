@@ -7,6 +7,8 @@ from django.utils import timezone
 from .models import JobApplication
 from django.urls import resolve, reverse
 from .views import dashboard, my_applications
+from accounts.models import EmployerProfile
+from jobs.models import Job
 
 
 class JobApplicationPageRoutingTest(TestCase):
@@ -246,6 +248,7 @@ class JobApplicationModelTest(TestCase):
         application.status= 'approved'
         application.submit_application()
         self.assertEqual(application.status, 'submitted')
+
 class JobApplicationViewTest(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
@@ -265,6 +268,27 @@ class JobApplicationViewTest(TestCase):
             job_url= 'https://example.com/jobs/python',
             cover_letter='I am interested in this position.'
         )
+        self.employer_user=User.objects.create_user(
+            username='testemployer',
+            email='employer@example.com',
+            password= 'testpassword123',
+        )
+        self.employer_profile=EmployerProfile.objects.create(
+            user=self.employer_user,
+            company_name='Test Company',
+        )
+        self.job=Job.objects.create(
+            employer=self.employer_profile,
+            title='Python Developer',
+            company_name='Test Company',
+            job_description= 'A Python developer position.',
+            job_location='Lagos',
+            country='Nigeria',
+            arrangement='onsite',
+            source_type='employer',
+            source_name='Test Company',
+        )
+        self.application.job = self.job
         self.application.status = 'pending'
         self.application.save()
 
@@ -280,6 +304,19 @@ class JobApplicationViewTest(TestCase):
         self.application.refresh_from_db()
         self.assertEqual(self.application.status, 'pending')
         self.assertRedirects(response, reverse('my_applications'))
+
+    def test_start_application_rejects_get_requests(self):
+        self.client.force_login(self.user)
+        self.application.status = 'saved'
+        self.application.save()
+
+        response = self.client.get(
+            reverse('start_application', args=[self.application.pk])
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'saved')
 
     def test_other_user_cannot_start_application(self):
         self.client.force_login(self.other_user)
@@ -303,6 +340,15 @@ class JobApplicationViewTest(TestCase):
         self.assertEqual(self.application.status, 'approved')
         self.assertRedirects(response, reverse('my_applications'))
 
+    def test_approve_application_rejects_get_requests(self):
+        self.client.force_login(self.user)
+        response = self.client.get(
+            reverse('approve_application', args=[self.application.pk])
+        )
+        self.assertEqual(response.status_code, 405)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'pending')
+
     def test_reject_application(self):
         self.client.force_login(self.user)
         response = self.client.post(
@@ -311,6 +357,16 @@ class JobApplicationViewTest(TestCase):
         self.application.refresh_from_db()
         self.assertEqual(self.application.status, 'rejected')
         self.assertRedirects(response, reverse('my_applications'))
+
+    def test_reject_application_rejects_get_requests(self):
+        self.client.force_login(self.user)
+        response= self.client.get(
+            reverse('reject_application', args=[self.application.pk])
+        )
+        self.assertEqual(response.status_code, 405)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'pending')
+
     def test_other_user_cannot_approve_application(self):
         self.client.force_login(self.other_user)
         response = self.client.post(
@@ -347,6 +403,19 @@ class JobApplicationViewTest(TestCase):
         self.application.refresh_from_db()
         self.assertEqual(self.application.status, 'submitted')
         self.assertRedirects(response, reverse('my_applications'))
+
+    def test_submit_application_rejects_get_requests(self):
+        self.client.force_login(self.user)
+        self.application.status= 'approved'
+        self.application.save()
+
+        response=self.client.get(
+            reverse('submit_application', args=[self.application.pk])
+        )
+
+        self.assertEqual(response.status_code, 405)
+        self.application.refresh_from_db()
+        self.assertEqual(self.application.status, 'approved')
     def test_my_application_requires_login(self):
         response= self.client.get(
             reverse('my_applications')
@@ -377,3 +446,99 @@ class JobApplicationViewTest(TestCase):
             reverse('submit_application', args=[self.application.pk])
         )
         self.assertEqual(response.status_code, 302)
+
+    def test_employer_can_mark_application_under_review(self):
+        self.client.force_login(self.employer_user)
+        self.application.status= 'submitted'
+        self.application.save()
+        response = self.client.post(
+            reverse('employer_mark_under_review', args=[self.application.pk])
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.application.status, 'under_review')
+
+    def test_non_employer_cannot_mark_application_under_review(self):
+        self.client.force_login(self.other_user)
+
+        self.application.status = 'submitted'
+        self.application.save()
+
+        response= self.client.post(
+            reverse('employer_mark_under_review', args=[self.application.pk])
+        )
+
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.application.status, 'submitted')
+
+    def test_employer_can_accept_application(self):
+        self.client.force_login(self.employer_profile.user)
+        self.application.status= 'submitted'
+        self.application.save()
+        response= self.client.post(
+            reverse('employer_accept_application', args=[self.application.pk])
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.application.status, 'employer_accepted')
+
+    def test_non_employer_cannot_accept_application(self):
+        self.client.force_login(self.other_user)
+        self.application.status= 'submitted'
+        self.application.save()
+        response=self.client.post(
+            reverse('employer_accept_application', args=[self.application.pk])
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.application.status, 'submitted')
+
+    def test_employer_can_reject_application(self):
+        self.client.force_login(self.employer_profile.user)
+        self.application.status= 'submitted'
+        self.application.save()
+        response= self.client.post(
+            reverse('employer_reject_application', args=[self.application.pk])
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(self.application.status, 'employer_rejected')
+
+    def test_non_employer_cannot_reject_application(self):
+        self.client.force_login(self.other_user)
+        self.application.status='submitted'
+        self.application.save()
+        response=self.client.post(
+            reverse('employer_reject_application', args=[self.application.pk])
+        )
+        self.application.refresh_from_db()
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.application.status, 'submitted')
+
+    def test_employer_can_view_applications_for_own_job(self):
+        self.client.force_login(self.employer_user)
+        self.application.status='submitted'
+        self.application.save()
+        response= self.client.get(
+            reverse('employer_applications', args=[self.job.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.application, response.context['applications'])
+
+    def test_other_employer_cannot_view_applications(self):
+        other_employer_user=User.objects.create_user(
+            username='otheremployer',
+            email='otheremployer@example.com',
+            password='testpassword123',
+        )
+
+        EmployerProfile.objects.create(
+            user=other_employer_user,
+            company_name='Another Company',
+        )
+        self.client.force_login(other_employer_user)
+        response= self.client.get(
+            reverse('employer_applications', args=[self.job.pk])
+        )
+        self.assertEqual(response.status_code, 404)

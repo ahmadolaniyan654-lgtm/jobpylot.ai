@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employer Applications | JobPylot AI</title>
+</head>
+<body>
+    <h1>Applications for {{ job.title }}</h1>
+    <p>{{ job.company_name }}</p>
+    {% for application in applications %}
+        <div>
+        {% if application.applicant %}
+            <h2>{{ application.applicant.username }}</h2>
+        {% else %}
+            <h2>Applicant account unavailable</h2>
+        {% endif %}
+
+            <p>Status: {{application.get_status_display }}</p>
+            <p>Cover letter: {{application.cover_letter }}</p>
+            <p>Applied on: {{application.created_at }}</p>
+
+            {% if application.status == 'submitted' %}
+               <form method="POST" action="{% url 'employer_mark_under_review' application_id=application.id %}">
+                   {% csrf_token %}
+                   <button type="submit">Mark Under Review</button>
+               </form>
+            {% endif %}
+            <form method="POST" action="{% url 'employer_accept_application' application_id=application.id %}">
+                {% csrf_token %}
+                <button type="submit">Accept Applications</button>
+            </form>
+
+            <form method="POST" action="{% url 'employer_reject_application' application_id=application.id %}">
+                {% csrf_token %}
+                <button type="submit">Reject Application</button>
+            </form>
+        </div>
+    {% empty %}
+        <p>No applications found for this job.</p>
+    {% endfor %}
+</body>
+</html>
